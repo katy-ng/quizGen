@@ -1,0 +1,10 @@
+/* Purpose: make each section outlined in the linked html file more aesthetic */
+
+*{ /*general settings for everything on the page*/
+    background-color:beige;
+    color:black;
+}
+
+.test{
+    font-size:300rem;
+}
