@@ -25,4 +25,15 @@
 
 .test{
     font-size:3rem;
+    background-color:beige;
+    color:rgb(0, 0, 0);
+}
+
+.test{
+    font-size:2rem;
+}
+
+.superduperimportant{
+    font-size:4rem;
+    color:rgb(0, 119, 255);
 }
