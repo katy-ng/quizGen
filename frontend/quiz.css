@@ -1,10 +1,87 @@
 /* Purpose: make each section outlined in the linked html file more aesthetic */
-
-*{ /*general settings for everything on the page*/
-    background-color:beige;
-    color:black;
+:root{ /*variables for colors*/
+    --beige: #fffbf6;
+    --yellow: #eed07a;
+    --cyan: #64a7a7;
+    --dark-cyan: #6a9797;
+    --black: #474747;
+    --gray: #a6a9a6;
+}
+@font-face { /*import pixel font, called "nine by five"*/
+  font-family: "MyFont";
+  src: url("../assets/nine0.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
-.test{
-    font-size:300rem;
+*{ /*general settings for everything on the page*/
+    background-color:var(--beige);
+    color:var(--black);
+    font-family: "MyFont", monospace;
+    font-size:1rem;
+}
+
+/*settings (upper half)*/
+.menu-container{
+    display:flex;
+    flex-direction:column;
+}
+.side-design{
+    width:5%;
+    height:auto;
+    background-image:url("../assets/sideDesignGrid.png");
+}
+.settings-container{
+    width:95%;
+    height:auto;
+    margin:2rem;
+    display:flex;
+    flex-direction:column;
+}
+.title-container{
+    font-size:5rem;
+}
+.pdf-container{
+    display:flex;
+    flex-direction:row;
+    justify-content:space-between;
+    align-items: center;
+    padding:1rem;
+    gap:1rem;
+    background-color:white;
+    border:0.2rem dashed var(--dark-cyan);
+    border-radius:1rem;
+}
+#upload-button{
+    width:30%;
+    height:auto;
+    background-color:var(--cyan);
+    padding:0.5rem;
+    border:0.2rem dashed var(--black);
+    border-radius:0.7rem;
+}
+#upload-button h1{
+    background-color:var(--cyan);
+    font-size:2rem;
+    font-weight:500;
+}
+#upload-button h2{
+    background-color:var(--cyan);
+    font-size:1.5rem;
+    font-weight:500;
+}
+#upload-button:hover,#upload-button:hover h1,#upload-button:hover h2{
+    background-color:var(--dark-cyan);
+    transition: all 0.3s ease;
+}
+.pdf-display-container{
+    width:70%;
+    height:auto;
+    display:flex;
+    flex-direction:row;
+    justify-content:flex-start;
+    align-items: center;
+    padding:0.2rem;
+    gap:0.2rem;
 }
