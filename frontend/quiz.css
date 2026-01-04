@@ -2,9 +2,14 @@
 
 *{ /*general settings for everything on the page*/
     background-color:beige;
-    color:black;
+    color:rgb(0, 0, 0);
 }
 
 .test{
-    font-size:300rem;
+    font-size:2rem;
+}
+
+.superduperimportant{
+    font-size:4rem;
+    color:rgb(0, 119, 255);
 }
