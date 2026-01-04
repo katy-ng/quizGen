@@ -1,10 +1,28 @@
 /* Purpose: make each section outlined in the linked html file more aesthetic */
+/*variables*/
+:root{
+    --beige: #fffbf6;
+    --yellow: #eed07a;
+    --cyan: #64a7a7;
+    --dark-cyan: #6a9797;
+    --black: #474747;
+    --gray: #a6a9a6;
+}
+@font-face {
+  font-family: "MyFont";
+  src: url("../nine0.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 
 *{ /*general settings for everything on the page*/
-    background-color:beige;
-    color:black;
+    background-color:var(--beige);
+    color:var(--black);
+    font-family: "MyFont", monospace;
 }
 
 .test{
-    font-size:300rem;
+    font-size:3rem;
 }
