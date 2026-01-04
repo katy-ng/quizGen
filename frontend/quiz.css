@@ -41,8 +41,8 @@ body{
     background-repeat:repeat;
 }
 .settings-container{
-    width:70%;
-    height:95%;
+    width:75%;
+    height:100%;
     margin:2rem;
     margin-left:5rem;
     display:flex;
@@ -53,6 +53,8 @@ body{
     font-size:5rem;
 }
 .pdf-container{
+    width:100%;
+    height:14rem;
     display:flex;
     flex-direction:row;
     justify-content:space-between;
@@ -63,6 +65,9 @@ body{
     padding:1rem;
     margin-top:1.5rem;
     gap:1rem;
+}
+input{
+    display:none;
 }
 #upload-button{
     width:30%;
@@ -89,16 +94,32 @@ body{
 .pdf-display-container{
     width: 70%;
     height:auto;
-    display:flex;
-    flex-direction:row;
-    justify-content:flex-start;
-    align-items: center;
     padding:0.2rem;
     gap:0.2rem;
     background-color:white;
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+    padding: 0.5rem;
+    scroll-behavior: smooth;
+    overflow:scroll;
+    border:0.2rem dashed var(--dark-cyan);
+    border-radius:0.7rem;
+}
+.pdf-wrapper{
+    flex: 0 0 auto;
+    overflow:hidden;
+}
+.pdf-wrapper embed:hover{
+    width:100%;
+    height:100%;
+    opacity:0.8;
+    transition: all 0.3s ease;
 }
 
 .difficulty-container{
+    width:100%;
+    height:auto;
     display:flex;
     flex-direction:row;
     justify-content:space-between;

@@ -20,10 +20,14 @@
             <h1>UPLOAD YOUR NOTES</h1>
             <h2>(pdfs only)</h2>
           </button>
+          <input
+            type="file"
+            id="pdf-input"
+            accept="application/pdf"
+            multiple
+            hidden
+          />
           <div class="pdf-display-container"><!--JS to make pdfs appear--></div>
-        </div>
-        <div class="stats-container">
-          <!--continue the rest-->
         </div>
         <div class="difficulty-container">
           <button id = "generate-button">
@@ -48,6 +52,7 @@
       </div>
       </div>
     </div>
+    <script src="quiz.js"></script>
   </body>
   
 </html>
