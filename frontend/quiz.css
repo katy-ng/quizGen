@@ -22,6 +22,11 @@
     font-size:1rem;
 }
 body{
+    overflow-x: hidden;
+    height:90rem;
+    display:flex;
+    flex-direction:column;
+
     background-color:var(--beige);
 }
 
@@ -34,6 +39,7 @@ body{
     align-items: center;
     background-color:var(--beige);
 }
+
 .side-design{
     width:10%;
     height:40rem;
@@ -222,4 +228,221 @@ input{
     background-color:var(--yellow);
     border:0.15rem dashed var(--black);
     transition: all 0.5s ease;
+}
+
+.bottom-container{
+    display:flex;
+    flex-direction:row;
+    justify-content:left;
+    align-items: space-evenly;
+    gap:2rem;
+    height:49.5rem;
+}
+
+
+.stats-container{
+    z-index: 0;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    align-items: center;
+    width: 30%;
+    height: 46rem;
+    position:relative;
+    padding:2rem;
+    border-radius:1rem;
+}
+
+.stats-container h1{
+    margin-top: .15rem;
+    margin-bottom: .05rem;
+    background-color:var(--cyan);
+    font-size:4.5rem;
+    font-weight:500;
+}
+
+.stats-container h2{
+    margin-top: .01rem;
+    margin-bottom: .15rem;
+    background-color:var(--cyan);
+    color: white;
+    font-size:2.5rem;
+    font-weight:500;
+}
+
+
+.stats-container::before{
+    z-index: -1;
+    content: "";
+    position: absolute;
+    top: -.25rem;
+    bottom: -0rem;
+    left: -2vw;   /* pushes border off screen*/
+    right: 0rem;
+    padding:0.5rem;
+    border: 0.2rem dashed var(--black);
+    background-color: var(--cyan);
+    border-radius:0.7rem;
+}
+
+.answers-container{
+    overflow-y: auto;
+    height: 15rem;
+    width: 100%;
+    display:flex;
+    flex-direction:column;
+    justify-content: space-evenly;
+    align-items: center;
+    border: 0.2rem dashed var(--black);
+    border-radius:0.7rem;
+}
+
+.questions-container{
+    display:flex;
+    flex-direction:column;
+    justify-content:space-evenly;
+    align-items: center;
+    z-index: 0;
+    height: 100%;
+    width: 60%;
+    height: 46rem;
+    position:relative;
+    padding:2rem;
+    border-radius:1rem;    
+}
+
+.submit-button{
+    font-size:3rem;
+    width:50%;
+    height:5rem;
+    background-color:var(--yellow);
+    padding:0.5rem;
+    border:0.15rem dashed var(--black);
+    border-radius:0.7rem; 
+}
+
+.submit-button:hover{
+    background-color:var(--dark-yellow);
+    transition: all 0.3s ease;
+}
+
+.questions-container::before{
+    z-index: -1;
+    content: "";
+    position: absolute;
+    top: -.25rem;
+    bottom: -0rem;
+    left: 0rem;   /* pushes border off screen */
+    right: -3vw;
+    padding:0.5rem;
+    border: 0.2rem dashed var(--yellow);
+    background-color: var(--beige);
+    border-radius:0.7rem;
+}
+
+.quiz-title-container{
+    z-index: 1;
+    display:flex;
+    flex-direction:row;
+    justify-content:left;
+    align-items: center;
+    width: 90%;
+    height: 6rem;
+
+}
+
+.quiz-title-container h1{
+    font-size:6rem;
+    font-weight:500;
+}
+
+
+.quiz-question-container{
+    display:flex;
+    flex-direction:row;
+    justify-content:left;
+    align-items: center;
+    width: 90%;
+    height: 5rem;
+}
+
+.quiz-question-container p{
+    font-size:2.5rem;
+    font-weight:500;
+}
+
+.square-element{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    width:3rem;
+    height:3rem;
+    background-color: var(--yellow);
+    border-radius: 1rem;
+    font-size: 2rem;
+    margin-right:.25rem;
+}
+
+.options-flex-container{
+    display:flex;
+    flex-direction:column;
+    justify-content:space-evenly;
+    align-items: center;
+    width: 90%;
+    height: 20rem;
+    gap:1rem;
+}
+.options-grid-container{
+    display:grid;
+    grid-template-columns: 3rem 58rem;
+    grid-template-rows: repeat(4, 1fr);
+    width: 100%;
+    height: 100%;
+    gap:1rem;
+}
+
+.options-grid-container p{
+    margin-top: 0rem;
+    font-size: 1.5rem;
+    font-weight:500;
+}
+
+.option-button{
+    font-size:1.25rem;
+    width:3rem;
+    height:3rem;
+    background-color:white;
+    padding:0.5rem;
+    border:0.15rem dashed var(--yellow);
+    border-radius:0.7rem;
+
+}
+
+.option-button:hover{
+    background-color:var(--yellow);
+    border:0.15rem dashed var(--black);
+    transition: all 0.5s ease;
+}
+
+.back-next-container{
+    display:flex;
+    flex-direction:row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 5rem;
+}
+
+.back-next-button{
+    height:4rem;
+    width:9rem;
+    background-color: var(--yellow);
+    border:0.15rem dashed var(--black);
+    border-radius:0.7rem;
+    font-size: 2rem;
+}
+
+.back-next-button:hover{
+    background-color:var(--dark-yellow);
+    transition: all 0.3s ease;
 }

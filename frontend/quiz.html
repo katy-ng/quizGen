@@ -29,6 +29,9 @@
           />
           <div class="pdf-display-container"><!--JS to make pdfs appear--></div>
         </div>
+        <div class="stats-container">
+          <!--continue the rest-->
+        </div>
         <div class="difficulty-container">
           <button id = "generate-button">
           <h1>GENERATE QUIZ</h1>  
@@ -50,9 +53,43 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+  <div class="bottom-container">
+    <div class="stats-container">
+      <h1>Progress</h1>
+      <h2>--/--</h2>
+      <div class="answers-container">
+      </div>
+      <button class="submit-button">SUBMIT</button>
+      <h1>Score</h1>
+      <h2>--/--</h2>
+    </div>
+    <div class="questions-container">
+      <div class="quiz-title-container">
+        <h1>QUIZ</h1>
+        <div class="rectangle-element"></div>
+      </div>
+      <div class="quiz-question-container">
+        <div class="square-element">#</div>
+        <p>Why did the chicken cross the road? </p>
+      </div>
+      <div class="options-flex-container">
+        <div class="options-grid-container">
+          <button class="option-button" id="A">A</button>
+          <p>To get to the other side. To get to the other side. To get to the other side. To get to the other side. To get to the other side. To get to the other side. To get to the other side. To get to the other side. To get to the other side. To get to the other side.To get to the other side. To get to the other side</p>
+          <button class="option-button" id="B">B</button>
+          <p>To get to the other side.</p>
+          <button class="option-button" id="C">C</button>
+          <p>To get to the other side.</p>
+          <button class="option-button" id="D">D</button>
+          <p>To get to the other side.</p>
+        </div>
+      </div>
+      <div class="back-next-container">
+        <button class="back-next-button" id="back">BACK</button>
+        <button class="back-next-button" id="next">NEXT</button>
       </div>
     </div>
-    <script src="quiz.js"></script>
   </body>
-  
 </html>
