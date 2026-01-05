@@ -93,16 +93,14 @@ input{
 }
 .pdf-display-container{
     width: 70%;
-    height:auto;
-    padding:0.2rem;
-    gap:0.2rem;
+    height:80%;
     background-color:white;
     display: flex;
     flex-direction: row;
-    gap: 2rem;
-    padding: 0.5rem;
+    gap: 1.5rem;
+    padding: 1rem;
     scroll-behavior: smooth;
-    overflow:scroll;
+    overflow-x:scroll;
     border:0.2rem dashed var(--dark-cyan);
     border-radius:0.7rem;
 }
@@ -110,10 +108,12 @@ input{
     flex: 0 0 auto;
     overflow:hidden;
 }
-.pdf-wrapper embed:hover{
+.pdf-wrapper embed{
     width:100%;
     height:100%;
-    opacity:0.8;
+}
+.pdf-wrapper embed:hover{
+    opacity:0.5;
     transition: all 0.3s ease;
 }
 
