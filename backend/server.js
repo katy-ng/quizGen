@@ -8,7 +8,9 @@ Purpose:
 //import modules (using the require() function)
 const express = require("express");
 const multer = require("multer");
-const pdfParse = require("pdf-parse");
+const pdfParse = require('pdf-parse');
+console.log("pdfParse type:", typeof pdfParse);
+
 
 /*express() function creates an Express application object, so app is
   the server, which listens and responds to HTTP requests
@@ -65,6 +67,9 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
     console.log("FILES RECEIVED:", req.files.length);
     const results = []; //array for each pdf's filename and chunked text
     for (const file of req.files) { //looks at each uploaded file stored in req.files
+      if (file.mimetype !== "application/pdf") {
+        continue; //if current file isn't a pdf, skip to the next file
+      }
       console.log("Filename:", file.originalname);
       console.log("Mimetype:", file.mimetype);
       console.log("Size:", file.size);
@@ -72,12 +77,14 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       console.log("Extracted text length:", data.text.length);
       
       if (!data.text || data.text.trim().length < 50) {
-        return res.status(400).json({
-          error: "PDF contains little or no extractable text. Please upload a text-based PDF."
+        results.push({
+          filename: file.originalname,
+          error: "PDF contains little or no extractable text"
         });
+        continue;
       }
       
-      const chunks = chunkText(data.text, 1000); //chunk the parsed data every 1000 words
+      const chunks = chunkText(data.text, 700); //chunk the parsed data every 700 words
       console.log("Number of chunks:", chunks.length);
       console.log("First chunk preview:", chunks[0]?.slice(0, 200));
 
