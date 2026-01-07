@@ -11,7 +11,6 @@ const multer = require("multer");
 const pdfParse = require('pdf-parse');
 console.log("pdfParse type:", typeof pdfParse);
 
-
 /*express() function creates an Express application object, so app is
   the server, which listens and responds to HTTP requests
     > app can be used for app.get(), .post(), .use(), .listen()*/
