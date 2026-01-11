@@ -1,15 +1,17 @@
 /*NOT linked to an HTML, so everything is private (can't be seen in browser DevTools)
-Purpose:
-  1. Import OpenAI
-  2. Send extracted pdf text as a prompt
+Purpose: the application's traffic controller between files, frontend and backend
+  1. Receives uploaded pdfs from frontend, parses + chunks, sends chunks to openAI.mjs
+  2. Receives structured quiz data from openAI.mjs and converts it into a JSON file in backend.
 */
 
 //-------------SEND UPLOADED FILES TO SERVER-------------//
 //import modules (using the require() function)
+require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const pdfParse = require('pdf-parse');
 console.log("pdfParse type:", typeof pdfParse);
+import { generateQuestionBank } from 'openAI.mjs';
 
 /*express() function creates an Express application object, so app is
   the server, which listens and responds to HTTP requests
@@ -83,7 +85,14 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
         continue;
       }
       
-      const chunks = chunkText(data.text, 700); //chunk the parsed data every 700 words
+      /*AI will gen a question based on each chunk, so by dividing the text by # of questions, it's
+        guaranteed that there enough chunks to gen questions from (in fact, there will usually be a remainder
+        after this division, there will be 1 more question than needed -> treat the JSON file AI generates as
+        a question bank, pull questions at random from it to ensure all questions can be used)*/
+        // or just combine the remainder with the last chunk? risk that last chunk being too long though
+      const wordCap = data.text.length / questions;
+      if(wordCap > 1000){ wordCap = 1000 } //prompts cannot be more than 1000 words long
+      const chunks = chunkText(data.text, wordCap); //chunk the parsed data every (wordCap) words
       console.log("Number of chunks:", chunks.length);
       console.log("First chunk preview:", chunks[0]?.slice(0, 200));
 
@@ -106,6 +115,10 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
     res.status(500).json({ error: "Failed to parse PDFs", details: err.message });
   }
 });
+
+
+//-------------CREATE JSON FILE-------------//
+
 
 
 //-------------START THE SERVER-------------//
