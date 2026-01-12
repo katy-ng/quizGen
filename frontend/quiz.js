@@ -6,14 +6,19 @@ Purpose:
 */
 
 /*----------Variables----------*/
+globalThis.questions = 5;
+globalThis.difficulty = "easy";
 const uploadButton = document.getElementById("upload-button");
 const pdfInput = document.getElementById("pdf-input");
 const pdfDisplayContainer = document.querySelector('.pdf-display-container');
 
 /*----------Upload PDF Button----------*/
 uploadButton.addEventListener("click",() => {
-  pdfInput.click(); /*to keep the input element invisible, make button adopt its functionality*/
+  pdfInput.click(); 
+  /*to keep the input element invisible, make button adopt its functionality while
+  being able to customize the upload button's appearance*/
 });
+
 pdfInput.addEventListener("change",() => {
   const files = pdfInput.files;
   Array.from(files).forEach(file => {
@@ -29,7 +34,8 @@ pdfInput.addEventListener("change",() => {
     pdfDisplayContainer.appendChild(wrapper);
   });
   uploadPDFsToServer(files); //send files to server.js to be handled
-  pdfInput.value=""; //so you can reupload the same file  
+  pdfInput.value=""; //so you can reupload the same file
+  loadQuiz();  
 });
 
 async function uploadPDFsToServer(files) {
@@ -47,7 +53,11 @@ async function uploadPDFsToServer(files) {
     method: "POST", //sending data request = POST, receiving data request = GET
     body: formData 
   });
+}
 
-  const data = await response.json();
-  console.log("Parsed text from server:", data);
+async function loadQuiz(){
+  const res = await fetch("/api/quiz");
+  const data = await res.json();
+
+  quizContainer.innerHTML = "";
 }

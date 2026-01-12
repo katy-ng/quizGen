@@ -2,16 +2,20 @@
 Purpose: the application's traffic controller between files, frontend and backend
   1. Receives uploaded pdfs from frontend, parses + chunks, sends chunks to openAI.mjs
   2. Receives structured quiz data from openAI.mjs and converts it into a JSON file in backend.
-*/
+
+  follows ES Module, not CommonJS
+  */
 
 //-------------SEND UPLOADED FILES TO SERVER-------------//
 //import modules (using the require() function)
-require("dotenv").config();
-const express = require("express");
-const multer = require("multer");
-const pdfParse = require('pdf-parse');
-console.log("pdfParse type:", typeof pdfParse);
-import { generateQuestionBank } from 'openAI.mjs';
+import express from "express";
+import multer from "multer";
+import pdfParse from "pdf-parse";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+import { generateQuestionBank } from "./openAI.mjs";
+import "dotenv/config"; //loads .env variables into process.env
 
 /*express() function creates an Express application object, so app is
   the server, which listens and responds to HTTP requests
@@ -30,9 +34,12 @@ const upload = multer({storage:multer.memoryStorage()});
   computers -> use path.join() to connect __dirname (the absolute path to "backend/"),
   with "../frontend". */
 const path = require("path");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 app.use(express.static(
   path.join(__dirname,"../frontend")
 ));
+app.use(express.json());
 
 //-------------PARSE AND CHUNK PDFS-------------//
 //chunk the parsed text from the pdfs
@@ -66,7 +73,7 @@ function chunkText(text, maxWords) {
 app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
   try {
     console.log("FILES RECEIVED:", req.files.length);
-    const results = []; //array for each pdf's filename and chunked text
+    let chunkedPDFs = []; //array for each pdf's filename and chunked text
     for (const file of req.files) { //looks at each uploaded file stored in req.files
       if (file.mimetype !== "application/pdf") {
         continue; //if current file isn't a pdf, skip to the next file
@@ -74,11 +81,12 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       console.log("Filename:", file.originalname);
       console.log("Mimetype:", file.mimetype);
       console.log("Size:", file.size);
-      const data = await pdfParse(file.buffer); //pass in PDF binary (by using .buffer on each file) to be parsed
+      const parsedPDFs = await pdfParse(file.buffer); //pass in PDF binary (by using .buffer on each file) to be parsed
       console.log("Extracted text length:", data.text.length);
       
-      if (!data.text || data.text.trim().length < 50) {
-        results.push({
+      //if current pdf contains little to no text, skip over it and continue to the next pdf
+      if (!parsedPDFs.text || parsedPDFs.text.trim().length < 50) {
+        chunkedPDFs.push({
           filename: file.originalname,
           error: "PDF contains little or no extractable text"
         });
@@ -90,35 +98,60 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
         after this division, there will be 1 more question than needed -> treat the JSON file AI generates as
         a question bank, pull questions at random from it to ensure all questions can be used)*/
         // or just combine the remainder with the last chunk? risk that last chunk being too long though
-      const wordCap = data.text.length / questions;
+      const wordCap = parsedPDFs.text.length / questions;
       if(wordCap > 1000){ wordCap = 1000 } //prompts cannot be more than 1000 words long
-      const chunks = chunkText(data.text, wordCap); //chunk the parsed data every (wordCap) words
+      const chunks = chunkText(parsedPDFs.text, wordCap); //chunk the parsed data every (wordCap) words
       console.log("Number of chunks:", chunks.length);
       console.log("First chunk preview:", chunks[0]?.slice(0, 200));
 
       //store each file's name and chunked text in array results
-      results.push({
+      chunkedPDFs.push({
         filename: file.originalname,
         chunks
       });
     }
 
-    //sends array results to frontend as a JSON file, if try code is successful
+    //calls openAI.mjs to generate the question bank using the chunked PDF text from array that was just filled
+    const generatedQuestions = await generateQuestionBank(chunkedPDFs);
+
+    let quizData = {generatedQuestions:[]}; //generateQuestionBank should return an array of JS objects, as quizData is initialized 
+    //if there's already a JSON file, get the existing questions, then merge the generated questions with the existing ones
+    if(fs.existsSync(QUESTIONS_FILE)){ 
+      quizData = JSON.parse(fs.readFileSync(QUESTIONS_FILE,"utf-8"));
+    }
+    quizData.generatedQuestions.push(...generatedQuestions); //merges newly gen questions with prev gen questions (or with nothing, if no prev gen questions)
+
+    //rewrite JSON (or create new JSON if it didn't exist before) with the newly generated questions (pretty-printed)
+    fs.writeFileSync(
+      QUESTIONS_FILE,
+      JSON.stringify(quizData, null, 2) //JSON.stringify converts JS objects to JSON text (bc files can only store text/bytes)
+    );
+
+    //if try code is successful, sends "success response" with quizData array
     res.json({
       success: true,
-      results
+      quizData
     });
 
-    } catch (err) {
+  } catch (err) {
     console.error("PDF PARSE ERROR:", err.message);
     console.error("Full error:", err);
-    res.status(500).json({ error: "Failed to parse PDFs", details: err.message });
+    res.status(500).json({ error: "Failed to generate quiz", details: err.message });
   }
 });
 
 
-//-------------CREATE JSON FILE-------------//
-
+// ----------------QUIZ API---------------- //
+/*Creates a GET endpoint for the frontend to access the question bank JSON file
+  by "exposing" the JSON file as an API.*/
+app.get("/api/quiz", (req, res) => {
+  if (!fs.existsSync(QUESTIONS_FILE)) {
+    return res.json({ generatedQuestions: [] });
+  }
+  //converts JSON file text (actual contents) back to JS objects (memory) in order to send the info to frontend
+  const data = JSON.parse(fs.readFileSync(QUESTIONS_FILE, "utf-8"));
+  res.json(data);
+});
 
 
 //-------------START THE SERVER-------------//
