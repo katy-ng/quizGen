@@ -21,7 +21,7 @@ uploadButton.addEventListener("click",() => {
   being able to customize the upload button's appearance*/
 });
 
-pdfInput.addEventListener("change",() => {
+pdfInput.addEventListener("change", async () => {
   const files = pdfInput.files;
   for(const file of files){
     if(file.type !=="application/pdf") continue;
@@ -33,30 +33,30 @@ pdfInput.addEventListener("change",() => {
 
     /*Load PDf as an ArrayBuffer.
       Save RAM by not using embed, show 1st pg instead of all, using PDF.js lib. */
-    const arrayBuffer = file.arrayBuffer();
-    const pdf = pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const page = pdf.getPage(1);
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
     const viewport = page.getViewport({ scale: 1 });
     const ctx = canvas.getContext("2d");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    page.render({ canvasContext: ctx, viewport }).promise;
+    await page.render({ canvasContext: ctx, viewport }).promise;
 
     //Immediately release memory
     pdf.cleanup();
     pdf.destroy();
   }
-  pdfInput.value=""; //so you can reupload the same file
+  /*pdfInput.value=""; //so you can reupload the same file*/
 });
 
-submitButton.addEventListener("click",() => {
+submitButton.addEventListener("click", async () => {
   const files = pdfInput.files;
-  for(const file of files){
-    if(file.type !=="application/pdf") continue;
-    uploadPDFsToServer(files); //send files to server.js to be handled
-    loadQuiz();  
-  }
+  if (!files.length) return;
+
+  await uploadPDFsToServer(files);
+  await loadQuiz();
 });
+
 
 async function uploadPDFsToServer(files) {
   const formData = new FormData(); //info collected from an HTML form
@@ -79,5 +79,5 @@ async function loadQuiz(){
   const res = await fetch("/api/quiz");
   const data = await res.json();
 
-  quizContainer.innerHTML = "";
+  /*quizContainer.innerHTML = "";*/
 }

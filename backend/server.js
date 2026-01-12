@@ -10,12 +10,15 @@ Purpose: the application's traffic controller between files, frontend and backen
 //import modules (ES Module uses import/export, commonJS uses require() )
 import express from "express";
 import multer from "multer";
-import pdfParse from "pdf-parse";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { generateQuestionBank } from "./openAI.mjs";
 import "dotenv/config"; //loads .env variables into process.env
+
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse");
 
 /*express() function creates an Express application object, so app is
   the server, which listens and responds to HTTP requests
