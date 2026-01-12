@@ -12,9 +12,11 @@ const client = new OpenAI({
 });
 
 //generates a JavaScript object of questions and their answer choices; creates one set per chunk sent
+//stores each set of question/answers in JSON format as a JavaScript object, in an array
 //export functions are accessible by other files, just import the function from the file you're using it in
 export async function generateQuestionBank(pdfChunkArray) {
   //give openAI instructions (how to speak + structure responses)
+  const questions = [];
   for(chunk of chunks){
     const response = await client.responses.create({
         model: "gpt-4.1-mini", //the model of openAI we're using
@@ -30,7 +32,7 @@ export async function generateQuestionBank(pdfChunkArray) {
             `
           },{
             role:"user", //role of content is user -> will give openAI its actual purpose/use
-            content: `Create one multiple choice, ${difficulty}-difficulty question based on these notes: ${pdfChunkArray[chunk]}`
+            content: `Create one multiple choice, ${difficulty}-difficulty question based on these notes: ${chunk}`
           }
         ],
         //ensures openAI's response is in a JSON format, specifying properties/guidelines to provide adequate info
@@ -73,11 +75,14 @@ export async function generateQuestionBank(pdfChunkArray) {
             }
           }
         }
-      })
-    console.log(response.output_text);
+      });
+    
+      //Convert openAI's response into a JS object
+      const questionObject = response.output_parsed;
+      questions.push(questionObject);
   }
   
-  return response.output_text;
+  return questions;
 }
 
 
