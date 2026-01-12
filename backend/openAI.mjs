@@ -17,7 +17,7 @@ const client = new OpenAI({
 export async function generateQuestionBank(pdfChunkArray) {
   //give openAI instructions (how to speak + structure responses)
   const questions = [];
-  for(chunk of chunks){
+  for(chunk of pdfChunkArray){
     const response = await client.responses.create({
         model: "gpt-4.1-mini", //the model of openAI we're using
         input: [ //the prompt you send to openAI, split into different sections
@@ -32,7 +32,7 @@ export async function generateQuestionBank(pdfChunkArray) {
             `
           },{
             role:"user", //role of content is user -> will give openAI its actual purpose/use
-            content: `Create one multiple choice, ${difficulty}-difficulty question based on these notes: ${chunk}`
+            content: `Create one multiple choice, ${globalThis.difficulty}-difficulty question based on these notes: ${chunk}`
           }
         ],
         //ensures openAI's response is in a JSON format, specifying properties/guidelines to provide adequate info
@@ -86,7 +86,8 @@ export async function generateQuestionBank(pdfChunkArray) {
 }
 
 
-//--------------CALL THE FUNCTIONS-------------//
+/*--------------CALL THE FUNCTIONS-------------//
 generateQuestionBank()
   .then(() => console.log("✅ API call succeeded"))
   .catch(err => console.error("❌ Error:", err));
+  */

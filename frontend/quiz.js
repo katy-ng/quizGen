@@ -8,9 +8,11 @@ Purpose:
 /*----------Variables----------*/
 globalThis.questions = 5;
 globalThis.difficulty = "easy";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 const uploadButton = document.getElementById("upload-button");
 const pdfInput = document.getElementById("pdf-input");
 const pdfDisplayContainer = document.querySelector('.pdf-display-container');
+const submitButton = document.querySelector('.submit-button');
 
 /*----------Upload PDF Button----------*/
 uploadButton.addEventListener("click",() => {
@@ -21,21 +23,39 @@ uploadButton.addEventListener("click",() => {
 
 pdfInput.addEventListener("change",() => {
   const files = pdfInput.files;
-  Array.from(files).forEach(file => {
-    if(file.type !=="application/pdf") return; /*ensure you only get pdfs*/
-    const url = URL.createObjectURL(file);
+  for(const file of files){
+    if(file.type !=="application/pdf") continue;
     const wrapper = document.createElement("div"); /*need a div wrapper over each pdf display to modify appearance*/
     wrapper.classList.add("pdf-wrapper");
-    const embed = document.createElement("embed");
-    embed.src = url;
-    embed.type = "application/pdf";
-
-    wrapper.appendChild(embed);
+    const canvas = document.createElement("canvas");
+    wrapper.appendChild(canvas);
     pdfDisplayContainer.appendChild(wrapper);
-  });
-  uploadPDFsToServer(files); //send files to server.js to be handled
+
+    /*Load PDf as an ArrayBuffer.
+      Save RAM by not using embed, show 1st pg instead of all, using PDF.js lib. */
+    const arrayBuffer = file.arrayBuffer();
+    const pdf = pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1 });
+    const ctx = canvas.getContext("2d");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    page.render({ canvasContext: ctx, viewport }).promise;
+
+    //Immediately release memory
+    pdf.cleanup();
+    pdf.destroy();
+  }
   pdfInput.value=""; //so you can reupload the same file
-  loadQuiz();  
+});
+
+submitButton.addEventListener("click",() => {
+  const files = pdfInput.files;
+  for(const file of files){
+    if(file.type !=="application/pdf") continue;
+    uploadPDFsToServer(files); //send files to server.js to be handled
+    loadQuiz();  
+  }
 });
 
 async function uploadPDFsToServer(files) {

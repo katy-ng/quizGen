@@ -7,7 +7,7 @@ Purpose: the application's traffic controller between files, frontend and backen
   */
 
 //-------------SEND UPLOADED FILES TO SERVER-------------//
-//import modules (using the require() function)
+//import modules (ES Module uses import/export, commonJS uses require() )
 import express from "express";
 import multer from "multer";
 import pdfParse from "pdf-parse";
@@ -33,13 +33,13 @@ const upload = multer({storage:multer.memoryStorage()});
   -> just entering "../frontend" only works localled, not on other people's
   computers -> use path.join() to connect __dirname (the absolute path to "backend/"),
   with "../frontend". */
-const path = require("path");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(
   path.join(__dirname,"../frontend")
 ));
 app.use(express.json());
+const QUESTIONS_FILE = path.join(__dirname, "questions.json");
 
 //-------------PARSE AND CHUNK PDFS-------------//
 //chunk the parsed text from the pdfs
@@ -82,7 +82,7 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       console.log("Mimetype:", file.mimetype);
       console.log("Size:", file.size);
       const parsedPDFs = await pdfParse(file.buffer); //pass in PDF binary (by using .buffer on each file) to be parsed
-      console.log("Extracted text length:", data.text.length);
+      console.log("Extracted text length:", parsedPDFs.text.length);
       
       //if current pdf contains little to no text, skip over it and continue to the next pdf
       if (!parsedPDFs.text || parsedPDFs.text.trim().length < 50) {
@@ -98,7 +98,7 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
         after this division, there will be 1 more question than needed -> treat the JSON file AI generates as
         a question bank, pull questions at random from it to ensure all questions can be used)*/
         // or just combine the remainder with the last chunk? risk that last chunk being too long though
-      const wordCap = parsedPDFs.text.length / questions;
+      const wordCap = parsedPDFs.text.length / globalThis.questions;
       if(wordCap > 1000){ wordCap = 1000 } //prompts cannot be more than 1000 words long
       const chunks = chunkText(parsedPDFs.text, wordCap); //chunk the parsed data every (wordCap) words
       console.log("Number of chunks:", chunks.length);
