@@ -76,6 +76,11 @@ function chunkText(text, maxWords) {
 app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
   try {
     console.log("FILES RECEIVED:", req.files.length);
+    //taking in the global variables from frontend to backend
+    const questions = Number(req.body.questions);
+    const difficulty = req.body.difficulty;
+    globalThis.questions = questions;
+    globalThis.difficulty = difficulty;
     let chunkedPDFs = []; //array for each pdf's filename and chunked text
     for (const file of req.files) { //looks at each uploaded file stored in req.files
       if (file.mimetype !== "application/pdf") {
@@ -101,7 +106,7 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
         after this division, there will be 1 more question than needed -> treat the JSON file AI generates as
         a question bank, pull questions at random from it to ensure all questions can be used)*/
         // or just combine the remainder with the last chunk? risk that last chunk being too long though
-      const wordCap = parsedPDFs.text.length / globalThis.questions;
+      let wordCap = parsedPDFs.text.length / globalThis.questions;
       if(wordCap > 1000){ wordCap = 1000 } //prompts cannot be more than 1000 words long
       const chunks = chunkText(parsedPDFs.text, wordCap); //chunk the parsed data every (wordCap) words
       console.log("Number of chunks:", chunks.length);
@@ -114,8 +119,11 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       });
     }
 
+    /*converts 2Darray of JS objects into flat array of strings, since generateQuestionBank() only takes in an array of strings
+      (map() turns chunkedPDFs into an array of arrays of strings, then flat() turns it into just an array of strings)*/
+    const allChunks = chunkedPDFs.flatMap(pdf => pdf.chunks);
     //calls openAI.mjs to generate the question bank using the chunked PDF text from array that was just filled
-    const generatedQuestions = await generateQuestionBank(chunkedPDFs);
+    const generatedQuestions = await generateQuestionBank(allChunks);
 
     let quizData = {generatedQuestions:[]}; //generateQuestionBank should return an array of JS objects, as quizData is initialized 
     //if there's already a JSON file, get the existing questions, then merge the generated questions with the existing ones
