@@ -177,21 +177,31 @@ body{
     border-radius:1rem;
 }
 
-#generate-button{
+.generate-button{
     width:30%;
     height: 8rem;
     border:0.2rem dashed var(--black);
     background-color:var(--yellow);
     border-radius:0.7rem;
 }
-
-#generate-button h1{
+.generate-button-disabled{
+    width:30%;
+    height: 8rem;
+    border:0.2rem dashed var(--black);
+    background-color:var(--gray);
+    border-radius:0.7rem;
+}
+.generate-button-disabled h1{
+    background-color:var(--gray);
+    font-size: 2rem;
+    font-weight: 500;
+}
+.generate-button h1{
     background-color:var(--yellow);
     font-size: 2rem;
     font-weight: 500;
 }
-
-#generate-button:hover,#generate-button:hover h1,#generate-button:hover h2{
+.generate-button:hover,.generate-button:hover h1,.generate-button:hover h2{
     background-color:var(--dark-yellow);
     transition: all 0.3s ease;
 }
@@ -334,7 +344,9 @@ body{
     border: 0.2rem dashed var(--black);
     border-radius:0.7rem;
 }
-
+.generate-error p, .generate-error li{
+    font-size:2rem;
+}
 .questions-container{
   display:flex;
   flex-direction:column;
@@ -419,7 +431,6 @@ body{
 }
 
 .answer-explanation-container h2{
-
     font-size:2rem;
     margin-left: 1rem;
     font-weight:500;

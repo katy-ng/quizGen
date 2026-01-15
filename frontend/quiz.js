@@ -15,11 +15,19 @@ const uploadButton = document.getElementById("upload-button");
 const pdfInput = document.getElementById("pdf-input");
 const pdfDisplayContainer = document.querySelector('.pdf-display-container');
 const submitButton = document.querySelector('.submit-button');
+const generateButton = document.querySelector('.generate-button-disabled');
 const numberQuestionContainer = document.querySelector('.number-question-container');
 const difficultySelectContainer = document.querySelector('.difficulty-select-container');
+let numberClicked = false;
+let difficultyClicked = false;
+const questionsContainer = document.querySelector('.questions-container');
 const uploadedPDFs = [];
+let currentQuestionIndex = 0;
+let questionArray = []; //array of generated quiz questions
+let answerArray = []/ //array of the user's selected answers
 
 //generate quiz button turns into a reset button, which resets entire application to before any user interaction
+//generate quiz button doesn't work until you've done all the prev steps
 
 /*----------Num Questions & Difficulty Buttons----------*/
 numberQuestionContainer.addEventListener("click",(event)=>{
@@ -32,6 +40,8 @@ numberQuestionContainer.addEventListener("click",(event)=>{
   clickedElement.classList.add("number-selected");
   globalThis.questions = Number(clickedElement.textContent);
   console.log("QUESTIONS:",globalThis.questions);
+  numberClicked=true;
+  quizReady();
 });
 difficultySelectContainer.addEventListener("click",(event)=>{
   //if the clicked element in the container was a difficulty button, then update UI and variables 
@@ -43,6 +53,8 @@ difficultySelectContainer.addEventListener("click",(event)=>{
   clickedElement.classList.add("difficulty-selected");
   globalThis.difficulty = clickedElement.textContent;
   console.log("DIFFICULTY:",globalThis.difficulty);
+  difficultyClicked=true;
+  quizReady();
 });
 
 
@@ -67,6 +79,7 @@ pdfInput.addEventListener("change", async () => {
     if (alreadyUploaded) continue;
     //if file is a new pdf, then add to the array of uploaded pdfs (manually upkeep this array bc removing from pdfInput.files is impossible)
     uploadedPDFs.push(file);
+    quizReady();
 
     /*----------CREATE UI----------*/
     const wrapper = document.createElement("div"); //need a div wrapper over each pdf display to modify appearance
@@ -112,12 +125,21 @@ pdfInput.addEventListener("change", async () => {
   pdfInput.value=""; //so you can reupload the same file
 });
 
-submitButton.addEventListener("click", async () => {
-  if (!uploadedPDFs.length) return;
-
-  await uploadPDFsToServer(uploadedPDFs);
-  await loadQuiz();
+generateButton.addEventListener("click", async () => {
+  if(quizReady()){
+    await uploadPDFsToServer(uploadedPDFs);
+    await loadQuiz();
+  }
 });
+function quizReady(){
+  if(uploadedPDFs.length>0 && numberClicked && difficultyClicked){
+    generateButton.classList.add("generate-button");
+    generateButton.classList.remove("generate-button-disabled");
+    return true;
+  } else {
+    return false;
+  }
+}
 
 
 async function uploadPDFsToServer(files) {
@@ -141,8 +163,75 @@ async function uploadPDFsToServer(files) {
 
 /*questions display one by one, click next/prev buttons to navigate through quiz*/
 async function loadQuiz(){
+  //get information from the generated JSON file (created an access point in backend by making an api)
   const res = await fetch("/api/quiz");
+  //data.generatedQuestions gives you the array of question objects
   const data = await res.json();
-
-  /*quizContainer.innerHTML = "";*/
+  questionArray = data.generatedQuestions;
+  if(questionArray.length==0){ //error message
+    questionsContainer.innerHTML=`
+    <div class="generate-error">
+      <p>Sorry! We had trouble generating a quiz for you.</p>
+      <p>Did you do all of the following?</p>
+      <ol>
+        <li>Upload at least one text-based PDF.</li>
+        <li>Select the total number of questions for your quiz.</li>
+        <li>Select the difficulty for your quiz.</li>
+      </ol>
+    </div>
+    `
+  }
+  displayQuestion(currentQuestionIndex);
 }
+/*design question display:
+  > dynamically design how the choices are displayed
+  > String.fromCharCode() converts numbers to letters, to get letter choices
+  > .join("") merges previous code into one HTML string
+  > "disabled" makes button not functional, style with "inactive" in CSS*/
+async function displayQuestion(index){
+  const current = questionArray[index];
+  questionsContainer.innerHTML = `
+    <div class="quiz-title-container">
+      <h1>QUIZ</h1>
+      <div class="rectangle-element"></div>
+    </div>
+    <div class="quiz-question-container">
+      <div class="square-element">${index+1}</div>
+      <p>${current.question}</p>
+    </div>
+    <div class="options-flex-container">
+      <div class="options-grid-container">
+        ${current.choices.map((choice, i) => `
+          <button class="option-button" id="${String.fromCharCode(65+i)}">${String.fromCharCode(65+i)}</button> 
+          <p>${choice}</p> 
+        `).join("")}
+      </div>
+    </div>
+    <div class="answer-explanation-container">
+      <h2>Explanation:</h2>
+      <p>${current.explanation}</p>
+    </div>
+    <div class="back-next-container">
+      <button class="back-next-button" id="back">BACK</button>
+      <button class="back-next-button" id="next">NEXT</button>
+    </div>
+  `;
+  document.getElementById("back").addEventListener("click", () => { 
+    if(currentQuestionIndex > 0){
+      currentQuestionIndex--;
+    } else if(currentQuestionIndex == 0){
+      currentQuestionIndex = questionArray.length-1;
+    }
+    displayQuestion(currentQuestionIndex);
+  }); 
+  document.getElementById("next").addEventListener("click", () => {
+    if(currentQuestionIndex < questionArray.length - 1){ 
+      currentQuestionIndex++; 
+    } else if(currentQuestionIndex == questionArray.length-1){
+      currentQuestionIndex = 0;
+    }
+    displayQuestion(currentQuestionIndex);
+  });
+}
+
+
