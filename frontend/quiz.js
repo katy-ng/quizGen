@@ -24,7 +24,7 @@ const questionsContainer = document.querySelector('.questions-container');
 const uploadedPDFs = [];
 let currentQuestionIndex = 0;
 let questionArray = []; //array of generated quiz questions
-let answerArray = []/ //array of the user's selected answers
+let answerArray = []; //array of the user's selected answers
 
 //generate quiz button turns into a reset button, which resets entire application to before any user interaction
 //generate quiz button doesn't work until you've done all the prev steps
@@ -98,6 +98,7 @@ pdfInput.addEventListener("change", async () => {
         let current = uploadedPDFs[i];
         if(current.name===file.name && current.size===file.size && current.lastModified===file.lastModified){
           uploadedPDFs.splice(i,1);
+          quizReady();
           break;
         }
       }
@@ -137,6 +138,8 @@ function quizReady(){
     generateButton.classList.remove("generate-button-disabled");
     return true;
   } else {
+    generateButton.classList.add("generate-button-disabled");
+    generateButton.classList.remove("generate-button");
     return false;
   }
 }
@@ -159,6 +162,10 @@ async function uploadPDFsToServer(files) {
     method: "POST", //sending data request = POST, receiving data request = GET
     body: formData 
   });
+  if (!response.ok) { 
+    throw new Error(`Server error: ${response.status}`);
+  }
+  return await response.json();
 }
 
 /*questions display one by one, click next/prev buttons to navigate through quiz*/
@@ -190,6 +197,10 @@ async function loadQuiz(){
   > "disabled" makes button not functional, style with "inactive" in CSS*/
 async function displayQuestion(index){
   const current = questionArray[index];
+  if (!current) {
+    console.error("❌ Tried to display a null question");
+    return;
+  }
   questionsContainer.innerHTML = `
     <div class="quiz-title-container">
       <h1>QUIZ</h1>

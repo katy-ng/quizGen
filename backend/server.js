@@ -71,6 +71,17 @@ function chunkText(text, maxWords) {
   return chunks;
 }
 
+//clean pdfs for hidden punctuation (google docs usually use these)
+function cleanText(text) {
+  return text
+    .replace(/\u00A0/g, " ")   // non-breaking spaces
+    .replace(/\u2019/g, "'")   // curly apostrophe
+    .replace(/\u201C|\u201D/g, '"') // curly quotes
+    .replace(/\u2013|\u2014/g, "-") // en/em dashes
+    .replace(/\u00AD/g, "")    // soft hyphens
+    .replace(/\s+/g, " ");     // normalize whitespace
+}
+
 /*parse pdfs for text: app.post() listends for POST requests at /upload-pdfs,
   upload.array() looks for files with field name "pdfs" and sends the pdfs to req.files*/
 app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
@@ -108,9 +119,12 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
         // or just combine the remainder with the last chunk? risk that last chunk being too long though
       let wordCap = parsedPDFs.text.length / globalThis.questions;
       if(wordCap > 1000){ wordCap = 1000 } //prompts cannot be more than 1000 words long
-      const chunks = chunkText(parsedPDFs.text, wordCap); //chunk the parsed data every (wordCap) words
+      let chunks = chunkText(parsedPDFs.text, wordCap); //chunk the parsed data every (wordCap) words
       console.log("Number of chunks:", chunks.length);
       console.log("First chunk preview:", chunks[0]?.slice(0, 200));
+      for(let chunk of chunks){
+        chunk = cleanText(chunk);
+      }
 
       //store each file's name and chunked text in array results
       chunkedPDFs.push({
@@ -121,7 +135,9 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
 
     /*converts 2Darray of JS objects into flat array of strings, since generateQuestionBank() only takes in an array of strings
       (map() turns chunkedPDFs into an array of arrays of strings, then flat() turns it into just an array of strings)*/
-    const allChunks = chunkedPDFs.flatMap(pdf => pdf.chunks);
+    const allChunks = chunkedPDFs
+      .filter(pdf => Array.isArray(pdf.chunks)) 
+      .flatMap(pdf => pdf.chunks);
     //calls openAI.mjs to generate the question bank using the chunked PDF text from array that was just filled
     const generatedQuestions = await generateQuestionBank(allChunks);
 
