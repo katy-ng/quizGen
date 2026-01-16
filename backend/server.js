@@ -50,22 +50,11 @@ function chunkText(text, maxWords) {
   //split text on every space/tab/nl, turning large string of parsed text into large array of individual words
   const words = text.split(/\s+/); 
   const chunks = [];
-  let currentChunk = [];
 
-  for (const word of words) { //for each element in array words, aka every word in the parsed text
-    currentChunk.push(word); //building chunks word by word
-
-    /*when currentChunk goes over word count, joins each individual string collected into a single
-      long string -> pushes it to array chunks -> clears currentChunk to start on next chunk*/
-    if (currentChunk.length >= maxWords) {
-      chunks.push(currentChunk.join(" ")); 
-      currentChunk = [];
-    }
-  }
-
-  //if there are still words remaining (total word count isn't divisible by maxWords), chunk that text
-  if (currentChunk.length) {
-    chunks.push(currentChunk.join(" "));
+  for (let i = 0; i < words.length; i += maxWords) { 
+    //each chunk is a slice of the words array, join(" ") makes each chunk a string
+    const chunk = words.slice(i, i + maxWords).join(" ");
+    chunks.push(chunk); 
   }
 
   return chunks;
@@ -117,14 +106,15 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
         after this division, there will be 1 more question than needed -> treat the JSON file AI generates as
         a question bank, pull questions at random from it to ensure all questions can be used)*/
         // or just combine the remainder with the last chunk? risk that last chunk being too long though
-      let wordCap = parsedPDFs.text.length / globalThis.questions;
-      if(wordCap > 1000){ wordCap = 1000 } //prompts cannot be more than 1000 words long
+      const totalWords = parsedPDFs.text.split(/\s+/).length; //can't do parsedPDFs.text.length to get length bc that's char count, need the word count
+      let wordCap = Math.floor(totalWords / globalThis.questions);
+      if(wordCap > 300){ wordCap = 300 } //prompts cannot be more than 1000 words long
       let chunks = chunkText(parsedPDFs.text, wordCap); //chunk the parsed data every (wordCap) words
       console.log("Number of chunks:", chunks.length);
       console.log("First chunk preview:", chunks[0]?.slice(0, 200));
-      for(let chunk of chunks){
-        chunk = cleanText(chunk);
-      }
+      for(let i=0;i<chunks.length;i++){
+        chunks[i] = cleanText(chunks[i]);
+      } //or just chunks = chunks.map(cleanText); does the same thing
 
       //store each file's name and chunked text in array results
       chunkedPDFs.push({

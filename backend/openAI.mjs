@@ -18,25 +18,31 @@ const client = new OpenAI({
 export async function generateQuestionBank(pdfChunkArray) {
   //give openAI instructions (how to speak + structure responses)
   const questions = [];
+
+  // --- MOCK MODE --- 
+  if (process.env.MOCK_AI === "true") { 
+    console.log("⚠️ MOCK MODE ENABLED — No OpenAI calls will be made."); 
+    for (let i = 0; i < pdfChunkArray.length; i++) { 
+      questions.push({ 
+        question: `Mock question #${i + 1}: What is the main idea of this section?`, 
+        choices: [ "Mock choice A", "Mock choice B", "Mock choice C", "Mock choice D" ], 
+        correct_answer: "Mock choice A", 
+        explanation: "This is a mock explanation used for development." 
+      }); 
+    }
+    if(questions.length > 0){
+      console.log(`Success! Created ${questions.length} questions`);
+    }
+    return questions;
+  }
+
+  // --- OPENAI MODE  ---
   for(const chunk of pdfChunkArray){
     const response = await client.responses.create({
-      model: "gpt-4.1-mini", //the model of openAI we're using
+      model: "gpt-4.1", //the model of openAI we're using
       input: ` 
         You are an educational assistant. 
         Generate one ${globalThis.difficulty}-difficulty multiple-choice question based ONLY on these notes: ${chunk} 
-        You MUST follow these rules:
-        1. Output ONLY valid JSON.
-        2. Output NOTHING before or after the JSON.
-        3. The JSON MUST match this schema exactly:
-        {
-          "question": "string",
-          "choices": ["string", "string", "string", "string"],
-          "correct_answer": "string",
-          "explanation": "string"
-        }
-        4. Do NOT include markdown.
-        5. Do NOT include comments.
-        6. Do NOT include any text outside the JSON object.
       `,
       //ensures openAI's response is in a JSON format, specifying properties/guidelines to provide adequate info
       text:{
@@ -78,12 +84,13 @@ export async function generateQuestionBank(pdfChunkArray) {
           }
         }
       }
-    });
+    }); 
   
     //Convert openAI's response into a JS object
     const questionObject = response.output_parsed;
     if (questionObject) {
       questions.push(questionObject);
+      console.log("Success!");
     } else {
       console.error("❌ Null parsed output — skipping this chunk");
     }
