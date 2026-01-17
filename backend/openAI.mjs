@@ -5,7 +5,7 @@ Purpose:
   a quiz based on the pdfs. 
 */
 
-
+import fs from "fs";
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -33,6 +33,7 @@ export async function generateQuestionBank(pdfChunkArray) {
     if(questions.length > 0){
       console.log(`Success! Created ${questions.length} questions`);
     }
+    console.log("Finished generating question bank. (MOCK)");
     return questions;
   }
 
@@ -96,6 +97,7 @@ export async function generateQuestionBank(pdfChunkArray) {
     }
   }
   
+  console.log("Finished generating question bank.")
   return questions;
 }
 

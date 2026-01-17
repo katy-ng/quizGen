@@ -90,7 +90,7 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       console.log("Mimetype:", file.mimetype);
       console.log("Size:", file.size);
       const parsedPDFs = await pdfParse(file.buffer); //pass in PDF binary (by using .buffer on each file) to be parsed
-      console.log("Extracted text length:", parsedPDFs.text.length);
+      console.log("Extracted text char length:", parsedPDFs.text.length);
       
       //if current pdf contains little to no text, skip over it and continue to the next pdf
       if (!parsedPDFs.text || parsedPDFs.text.trim().length < 50) {
@@ -109,6 +109,7 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       const totalWords = parsedPDFs.text.split(/\s+/).length; //can't do parsedPDFs.text.length to get length bc that's char count, need the word count
       let wordCap = Math.floor(totalWords / globalThis.questions);
       if(wordCap > 300){ wordCap = 300 } //prompts cannot be more than 1000 words long
+      console.log("Extracted text word count:", totalWords, " / Calculated WordCap:", wordCap);
       let chunks = chunkText(parsedPDFs.text, wordCap); //chunk the parsed data every (wordCap) words
       console.log("Number of chunks:", chunks.length);
       console.log("First chunk preview:", chunks[0]?.slice(0, 200));
@@ -130,24 +131,35 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       .flatMap(pdf => pdf.chunks);
     //calls openAI.mjs to generate the question bank using the chunked PDF text from array that was just filled
     const generatedQuestions = await generateQuestionBank(allChunks);
+    //clean generated questions by filtering out null, undefined, or malformed questions
+    generatedQuestions.filter(q =>
+      q &&
+      typeof q.question === "string" && 
+      Array.isArray(q.choices) && 
+      q.choices.length === 4 && 
+      typeof q.correct_answer === "string" && 
+      typeof q.explanation === "string" 
+    );
 
-    let quizData = {generatedQuestions:[]}; //generateQuestionBank should return an array of JS objects, as quizData is initialized 
-    //if there's already a JSON file, get the existing questions, then merge the generated questions with the existing ones
+    //initialize preQuizData as an empty array just in case there is no previously-made JSON file
+    let prevQuizData = {generatedQuestions:[]}; 
+    //if there IS already a JSON file, set prevQuizData equal to the existing questions
     if(fs.existsSync(QUESTIONS_FILE)){ 
-      quizData = JSON.parse(fs.readFileSync(QUESTIONS_FILE,"utf-8"));
+      prevQuizData = JSON.parse(fs.readFileSync(QUESTIONS_FILE,"utf-8"));
     }
-    quizData.generatedQuestions.push(...generatedQuestions); //merges newly gen questions with prev gen questions (or with nothing, if no prev gen questions)
+    //merge newly gen questions with prev gen questions (or with nothing, if no prev gen questions)
+    prevQuizData.generatedQuestions.push(...generatedQuestions); 
 
     //rewrite JSON (or create new JSON if it didn't exist before) with the newly generated questions (pretty-printed)
     fs.writeFileSync(
       QUESTIONS_FILE,
-      JSON.stringify(quizData, null, 2) //JSON.stringify converts JS objects to JSON text (bc files can only store text/bytes)
+      JSON.stringify(prevQuizData, null, 2) //JSON.stringify converts JS objects to JSON text (bc files can only store text/bytes)
     );
 
     //if try code is successful, sends "success response" with quizData array
     res.json({
       success: true,
-      quizData
+      generatedQuestions:prevQuizData.generatedQuestions
     });
 
   } catch (err) {
@@ -155,6 +167,12 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
     console.error("Full error:", err);
     res.status(500).json({ error: "Failed to generate quiz", details: err.message });
   }
+});
+
+//clear questions.json every time you refresh the page (send message from frontend to backend every time quiz.html reloads)
+app.post("/clear-questions", (req, res) => {
+  fs.writeFileSync(QUESTIONS_FILE, JSON.stringify({ generatedQuestions: [] }, null, 2));
+  res.json({ success: true });
 });
 
 

@@ -6,10 +6,9 @@ Purpose:
 */
 
 /*----------Variables----------*/
-globalThis.questions = 5;
-globalThis.difficulty = "easy";
+globalThis.questions=5;
+globalThis.difficulty="easy";
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-
 
 const uploadButton = document.getElementById("upload-button");
 const pdfInput = document.getElementById("pdf-input");
@@ -21,13 +20,30 @@ const difficultySelectContainer = document.querySelector('.difficulty-select-con
 let numberClicked = false;
 let difficultyClicked = false;
 const questionsContainer = document.querySelector('.questions-container');
+const progressTitleContainer = document.querySelector('.progress-title-container');
+const answersContainer = document.querySelector('.answers-container');
+const scoreTitleContainer = document.querySelector('.score-title-container');
+const pdfMessage = document.querySelector('.pdf-message');
+
+let uploadedSizeSum = 0;
 const uploadedPDFs = [];
 let currentQuestionIndex = 0;
 let questionArray = []; //array of generated quiz questions
 let answerArray = []; //array of the user's selected answers
+let scoreArray = []; //array of whether the user got the corresponding index question right or wrong 
+let score = 0;
+let progress = 0;
+let submitted = false;
 
 //generate quiz button turns into a reset button, which resets entire application to before any user interaction
 //generate quiz button doesn't work until you've done all the prev steps
+
+//send message to server.js every time quiz.html reloads (to reset backend, like clearing questions.json)
+//IF MULTIPLE PEOPLE USE THIS SITE AND LOAD QUIZ.HTML, THEY WILL CLEAR EACH OTHER'S QUESTIONS
+window.addEventListener("load", async () => {
+  await fetch("/clear-questions", { method: "POST" });
+  console.log("🧹 Cleared questions.json on page refresh");
+});
 
 /*----------Num Questions & Difficulty Buttons----------*/
 numberQuestionContainer.addEventListener("click",(event)=>{
@@ -65,20 +81,35 @@ uploadButton.addEventListener("click",() => {
   being able to customize the upload button's appearance*/
 });
 
+
 pdfInput.addEventListener("change", async () => {
   const files = pdfInput.files;
+  let problem = false;
+  uploadedSizeSum = uploadedPDFs.reduce(
+    (sum, f) => sum + f.size,
+    0
+  );
+  let successfulUploads = 0;
   for(const file of files){
     /*----------MAINTENANCE----------*/
     //check if file is pdf or a duplicate
-    if(file.type !=="application/pdf") continue;
+    if(file.type !=="application/pdf"){
+      problem=true;
+      continue;
+    }
     const alreadyUploaded = uploadedPDFs.some(existingFile =>
       existingFile.name === file.name &&
       existingFile.size === file.size &&
       existingFile.lastModified === file.lastModified
     );
-    if (alreadyUploaded) continue;
-    //if file is a new pdf, then add to the array of uploaded pdfs (manually upkeep this array bc removing from pdfInput.files is impossible)
+    if(file.size+uploadedSizeSum > 5*1024*1024 || alreadyUploaded){ //5MB file size upload cap
+      problem=true;
+      continue;
+    }
+    //if file is a new and adequately sized pdf, then add to the array of uploaded pdfs (manually upkeep this array bc removing from pdfInput.files is impossible)
     uploadedPDFs.push(file);
+    uploadedSizeSum+=file.size;
+    successfulUploads++;
     quizReady();
 
     /*----------CREATE UI----------*/
@@ -99,6 +130,11 @@ pdfInput.addEventListener("change", async () => {
         if(current.name===file.name && current.size===file.size && current.lastModified===file.lastModified){
           uploadedPDFs.splice(i,1);
           quizReady();
+          uploadedSizeSum-=current.size;
+          pdfMessage.innerHTML = `
+            <p>${(uploadedSizeSum/1024/1024).toFixed(2)} / 5MB <br>
+              Successfully deleted file(s)</p>
+          `
           break;
         }
       }
@@ -123,19 +159,42 @@ pdfInput.addEventListener("change", async () => {
     pdf.cleanup();
     pdf.destroy();
   }
+  if(problem){
+      pdfMessage.innerHTML = `
+        <p>${(uploadedSizeSum/1024/1024).toFixed(2)} / 5MB <br>
+          Some files could not be uploaded (invalid file type, duplicate, or max file size reached) <br>
+          Successfully uploaded ${successfulUploads} file(s)!</p>
+        `
+    } else {
+      pdfMessage.innerHTML = `
+        <p>${(uploadedSizeSum/1024/1024).toFixed(2)} / 5MB <br>
+          Successfully uploaded ${successfulUploads} file(s)!</p>
+      `
+    }
   pdfInput.value=""; //so you can reupload the same file
 });
 
 generateButton.addEventListener("click", async () => {
+  //reset prev gen quiz
+  score = 0;
+  progress = 0;
+  submitted = false;
+  answerArray = [];
+  scoreArray = [];
+  currentQuestionIndex = 0;
+
+  //gen button only works if user selected all settings
   if(quizReady()){
     await uploadPDFsToServer(uploadedPDFs);
     await loadQuiz();
   }
 });
+
 function quizReady(){
   if(uploadedPDFs.length>0 && numberClicked && difficultyClicked){
     generateButton.classList.add("generate-button");
     generateButton.classList.remove("generate-button-disabled");
+    console.log("Quiz Ready!")
     return true;
   } else {
     generateButton.classList.add("generate-button-disabled");
@@ -188,8 +247,91 @@ async function loadQuiz(){
     </div>
     `
   }
+  console.log(questionArray);
   displayQuestion(currentQuestionIndex);
+  displayStats();
 }
+
+function getCorrectChoice(question){
+  for(let i=0;i<question.choices.length;i++){
+    if(question.choices[i]===question.correct_answer){
+      return(String.fromCharCode(65+i));
+    }
+  }
+  return("--");
+}
+
+/*design stats sidebar*/
+async function displayStats(){
+  //progress stat
+  if(questionArray.length < 1){
+    progressTitleContainer.innerHTML = `
+      <h1>PROGRESS</h1>
+      <h2>--/--</h2>
+    `
+  } else {
+    progressTitleContainer.innerHTML = `
+      <h1>PROGRESS</h1>
+      <h2>${progress} / ${globalThis.questions}</h2>
+    `
+  }
+
+  //menu showing overview of the questions (what you answered, and correct answers after submitting)
+  answersContainer.innerHTML = ""; //clear container so calling function again doesn't append new children
+  for(let i=0;i<questionArray.length;i++){
+    let answersIndividualContainer = document.createElement('div');
+    answersIndividualContainer.classList.add("answers-individual-container");
+    
+    let chosenAnswer = "--";
+    if(answerArray[i] != null){
+      chosenAnswer = answerArray[i];
+    }
+    answersIndividualContainer.innerHTML = `
+      <div class="answers-question-unchosen">${i+1}</div>
+      <div class="answers-answer">${chosenAnswer}</div>
+      <div class="answers-correct">${getCorrectChoice(questionArray[i])}</div>
+    `
+    //question number boxes light up yellow if you've answered them, gray otherwise
+    let numberBox = answersIndividualContainer.querySelector(".answers-question-unchosen");
+    if(answerArray[i] != null){
+      numberBox.classList.add("answers-question-chosen");
+      numberBox.classList.remove("answers-question-unchosen");
+    } else {
+      numberBox.classList.add("answers-question-unchosen");
+      numberBox.classList.remove("answers-question-chosen");
+    }
+
+    //after submission, correct answers become visible and their question number boxes turn green/red if right/wrong
+    let correctAnswers = answersIndividualContainer.querySelector(".answers-correct");
+    if(!submitted){
+      correctAnswers.style.opacity=0;
+    } else {
+      correctAnswers.style.opacity=1;
+      if(scoreArray[i]==="right"){
+        numberBox.classList.add("answers-question-correct");
+      } else {
+        numberBox.classList.add("answers-question-incorrect");
+      }
+    }
+
+    answersContainer.appendChild(answersIndividualContainer);
+  }
+
+  //score stat
+  if(submitted){
+    scoreTitleContainer.innerHTML = `
+      <h1>SCORE</h1>
+      <h2>${score} / ${globalThis.questions}</h2>
+    `
+  } else {
+    scoreTitleContainer.innerHTML = `
+      <h1>SCORE</h1>
+      <h2>--/--</h2>
+    `
+  }
+}
+
+
 /*design question display:
   > dynamically design how the choices are displayed
   > String.fromCharCode() converts numbers to letters, to get letter choices
@@ -213,20 +355,54 @@ async function displayQuestion(index){
     <div class="options-flex-container">
       <div class="options-grid-container">
         ${current.choices.map((choice, i) => `
-          <button class="option-button" id="${String.fromCharCode(65+i)}">${String.fromCharCode(65+i)}</button> 
+          <button class="option-button" data-choice="${String.fromCharCode(65+i)}">${String.fromCharCode(65+i)}</button> 
           <p>${choice}</p> 
         `).join("")}
-      </div>
+      </div> 
     </div>
-    <div class="answer-explanation-container">
-      <h2>Explanation:</h2>
-      <p>${current.explanation}</p>
-    </div>
+    <div class="answer-explanation-container"></div>
     <div class="back-next-container">
       <button class="back-next-button" id="back">BACK</button>
       <button class="back-next-button" id="next">NEXT</button>
     </div>
   `;
+  //after submission, correct answers become visible
+  let explanations = questionsContainer.querySelector(".answer-explanation-container");
+  if(submitted){
+    explanations.innerHTML=`
+      <h2>Explanation:</h2>
+      <p>${current.explanation}</p>
+    `
+  } 
+
+  if(answerArray[currentQuestionIndex] != null){
+    const selectedButton = document.querySelector(
+      `.option-button[data-choice="${answerArray[currentQuestionIndex]}"]`
+    );
+
+    if (selectedButton) {
+      selectedButton.classList.add("option-selected");
+    }
+  }
+  document.querySelector('.options-grid-container').addEventListener("click",(event) => {
+    const clickedElement = event.target;
+    if(submitted){
+      if(clickedElement.classList.contains("option-button")) return;
+    } else {
+      if(!clickedElement.classList.contains("option-button")) return;
+      document.querySelectorAll(".option-button").forEach(button =>
+        button.classList.remove("option-selected")
+      );
+      clickedElement.classList.add("option-selected");
+      if(answerArray[currentQuestionIndex] == null){
+        progress++;
+      }
+      answerArray[currentQuestionIndex] = clickedElement.dataset.choice;
+      console.log("Chose",clickedElement.dataset.choice,"for question",currentQuestionIndex);
+      console.log("Current questions answered:",answerArray);
+      displayStats();
+    }
+  });
   document.getElementById("back").addEventListener("click", () => { 
     if(currentQuestionIndex > 0){
       currentQuestionIndex--;
@@ -243,6 +419,26 @@ async function displayQuestion(index){
     }
     displayQuestion(currentQuestionIndex);
   });
+
+  console.log("Displayed question",currentQuestionIndex);
 }
 
+submitButton.addEventListener("click",()=>{
+  submitted = true; //lock changing answers; display explanations, score, and correct answers
+  console.log("Quiz successfully submitted!");
+
+  //grading
+  for(let i=0;i<answerArray.length;i++){
+    if(answerArray[i]===getCorrectChoice(questionArray[i])){
+      scoreArray[i]="right";
+      score++;
+    } else {
+      scoreArray[i]="wrong";
+    }
+  }
+  console.log("Score:",score,scoreArray);
+
+  displayQuestion(currentQuestionIndex);
+  displayStats();
+});
 

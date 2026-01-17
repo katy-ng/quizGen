@@ -15,17 +15,20 @@
       <div class="settings-container">
         <div class="title-container">quizGen</div>
         <div class="pdf-container">
-          <button id="upload-button">
-            <h1>UPLOAD YOUR NOTES</h1>
-            <h2>(pdfs only)</h2>
-          </button>
-          <input
-            type="file"
-            id="pdf-input"
-            accept="application/pdf"
-            multiple
-            hidden
-          />
+          <div class="pdf-button-container">
+            <button id="upload-button">
+              <h1>UPLOAD YOUR NOTES</h1>
+              <h2>(pdfs only)</h2>
+            </button>
+            <input
+              type="file"
+              id="pdf-input"
+              accept="application/pdf"
+              multiple
+              hidden
+            />
+            <div class="pdf-message"></div>
+          </div>
           <div class="pdf-display-container"><!--JS to make pdfs appear--></div>
         </div>
         <div class="difficulty-container">
@@ -52,13 +55,10 @@
     </div>
   <div class="bottom-container">
     <div class="stats-container">
-      <h1>Progress</h1>
-      <h2>--/--</h2>
-      <div class="answers-container">
-      </div>
+      <div class="progress-title-container"></div>
+      <div class="answers-container"></div>
       <button class="submit-button">SUBMIT</button>
-      <h1>Score</h1>
-      <h2>--/--</h2>
+      <div class="score-title-container"></div>
     </div>
     <div class="questions-container"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
