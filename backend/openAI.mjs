@@ -1,12 +1,17 @@
-import "dotenv/config";
 /*NOT linked to an HTML, so everything is private (can't be seen in browser DevTools)
 Purpose:
   Takes in chunked pdf text from server.js and uses them to prompt openAI to generate 
   a quiz based on the pdfs. 
 */
 
+import "dotenv/config";
 import fs from "fs";
 import OpenAI from "openai";
+
+//throw error if no valid API Key for OpenAI
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error("OpenAI API key missing");
+}
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -91,16 +96,14 @@ export async function generateQuestionBank(pdfChunkArray) {
     const questionObject = response.output_parsed;
     if (questionObject) {
       questions.push(questionObject);
-      console.log("Success!");
+      console.log("Question generated using OpenAI!");
     } else {
       console.error("❌ Null parsed output — skipping this chunk");
     }
   }
-  
   console.log("Finished generating question bank.")
   return questions;
 }
-
 
 /*--------------CALL THE FUNCTIONS-------------//
 generateQuestionBank()

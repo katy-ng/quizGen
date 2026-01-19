@@ -14,19 +14,9 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 
-//switch between using Hugging Face API or OpenAI API in .env file
 import "dotenv/config"; //loads .env variables into process.env
-let generateQuestionBank;
-const provider = process.env.LLM_PROVIDER || "hf";
-if (provider === "hf") {
-  ({ generateQuestionBank } = await import("./huggingFace.mjs"));
-  console.log("Using Hugging Face provider");
-} else if (provider === "openai") {
-  ({ generateQuestionBank } = await import("./openAI.mjs"));
-  console.log("Using OpenAI provider");
-} else {
-  throw new Error(`Unknown LLM_PROVIDER: ${provider}`);
-}
+import { generateQuestionBank } from "./llmRouter.mjs";
+
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);

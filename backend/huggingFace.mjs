@@ -1,7 +1,4 @@
-import "dotenv/config";
-
-/*
-Purpose:
+/*Purpose:
   Replaces openAI.mjs
   Generates quiz questions using Hugging Face Inference API
   Includes:
@@ -9,6 +6,12 @@ Purpose:
     - validation
     - retry logic
 */
+import "dotenv/config";
+
+//throw error if no valid API Key for Hugging Face
+if (!process.env.HUGGINGFACE_API_KEY) {
+  throw new Error("Hugging Face API key missing");
+}
 
 const HF_API_URL =
   "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta";
@@ -143,19 +146,19 @@ export async function generateQuestionBank(pdfChunkArray) {
 
         if (isValidQuestion(parsed)) {
           questions.push(parsed);
-          console.log("✅ Question generated");
+          console.log("Question generated using HF!");
           success = true;
         } else {
-          console.warn(`⚠️ Invalid JSON (attempt ${attempts})`);
+          console.warn(`Invalid JSON (attempt ${attempts})`);
         }
         console.log("RAW HF OUTPUT:\n", raw);
       } catch (err) {
-        console.error(`❌ HF error (attempt ${attempts}):`, err.message);
+        console.error(`HF error (attempt ${attempts}):`, err.message);
       }
     }
 
     if (!success) {
-      console.error("❌ Failed after 3 attempts — skipping chunk");
+      console.error("Failed after 3 attempts — skipping chunk");
     }
   }
 
