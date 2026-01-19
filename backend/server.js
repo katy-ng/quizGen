@@ -13,8 +13,20 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { generateQuestionBank } from "./openAI.mjs";
+
+//switch between using Hugging Face API or OpenAI API in .env file
 import "dotenv/config"; //loads .env variables into process.env
+let generateQuestionBank;
+const provider = process.env.LLM_PROVIDER || "hf";
+if (provider === "hf") {
+  ({ generateQuestionBank } = await import("./huggingFace.mjs"));
+  console.log("Using Hugging Face provider");
+} else if (provider === "openai") {
+  ({ generateQuestionBank } = await import("./openAI.mjs"));
+  console.log("Using OpenAI provider");
+} else {
+  throw new Error(`Unknown LLM_PROVIDER: ${provider}`);
+}
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -130,9 +142,9 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       .filter(pdf => Array.isArray(pdf.chunks)) 
       .flatMap(pdf => pdf.chunks);
     //calls openAI.mjs to generate the question bank using the chunked PDF text from array that was just filled
-    const generatedQuestions = await generateQuestionBank(allChunks);
+    let generatedQuestions = await generateQuestionBank(allChunks);
     //clean generated questions by filtering out null, undefined, or malformed questions
-    generatedQuestions.filter(q =>
+    generatedQuestions = generatedQuestions.filter(q =>
       q &&
       typeof q.question === "string" && 
       Array.isArray(q.choices) && 
@@ -140,6 +152,13 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       typeof q.correct_answer === "string" && 
       typeof q.explanation === "string" 
     );
+    //fail if generatedQuestions has no data
+    if (generatedQuestions.length === 0) {
+      return res.status(500).json({
+        error: "No questions could be generated. Try again or switch models."
+      });
+    }
+
 
     //initialize preQuizData as an empty array just in case there is no previously-made JSON file
     let prevQuizData = {generatedQuestions:[]}; 
