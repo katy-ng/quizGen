@@ -13,8 +13,8 @@ import { generateQuestionBank as hfGen } from "./huggingFace.mjs";
   To get the correct answer, it finds a sentence containing the key term
   To get other answer choices, it finds sentences from the same chunk without the key word*/ 
 
-function localFallback(chunks) {
-  console.warn("⚠️ Using LOCAL fallback model (PDF-grounded)");
+function localFallback(chunks,limit) {
+  console.warn("Using LOCAL fallback model (PDF-grounded)");
 
   const STOPWORDS = new Set([
     "the","and","of","to","in","a","is","that","it","for","on","as",
@@ -81,7 +81,12 @@ function localFallback(chunks) {
     };
   }
 
-  return chunks.map(makeQuestion);
+  let questions = [];
+  for(let chunk of chunks){
+    if(questions.length>=limit){break}
+    questions.push(makeQuestion(chunk));
+  }
+  return questions;
 }
 
 
@@ -89,43 +94,67 @@ function localFallback(chunks) {
 
 async function tryProvider(name, fn, chunks) {
   try {
-    console.log(`🧠 Attempting ${name} provider...`);
+    console.log(`Attempting ${name} provider...`);
     const result = await fn(chunks);
 
     if (!Array.isArray(result) || result.length === 0) {
       throw new Error(`${name} returned no valid questions`);
     }
 
-    console.log(`✅ ${name} succeeded`);
+    console.log(`${name} succeeded`);
     return result;
   } catch (err) {
-    console.error(`❌ ${name} failed:`, err.message);
+    console.error(`${name} failed:`, err.message);
     return null;
   }
 }
 
 /* ---------------- MAIN EXPORT ---------------- */
-
 export async function generateQuestionBank(chunks) {
-  // MOCK MODE SHORT-CIRCUIT
+
+  let questions = [];
+  let remainingChunks = [...chunks];
+  const max = globalThis.questions;
+  let remainingBudget = () => max - questions.length; //function so that it's recalc every time you call it (easier than having to remember to recalc a variable before using it)
+
+  //MOCK MODE
   if (process.env.MOCK_AI === "true") {
-    console.log("⚠️ MOCK MODE ENABLED — Skipping all providers");
-    return localFallback(chunks);
+    console.log("MOCK MODE ENABLED — Skipping all providers");
+    return localFallback(chunks,max);
   }
 
-  //OpenAI
-  if (process.env.OPENAI_API_KEY) {
-    const openaiResult = await tryProvider("OpenAI", openaiGen, chunks);
-    if (openaiResult) return openaiResult;
+  //Try using OpenAI first
+  if (process.env.OPENAI_API_KEY && remainingBudget()>0) {
+    try {
+      const genQuestions = await openaiGen(remainingChunks,remainingBudget());
+      questions.push(...genQuestions);
+      remainingChunks = remainingChunks.slice(genQuestions.length);
+    } catch (err) {
+      console.warn("OpenAI failed or quota exhausted");
+    }
   }
 
-  //if OpenAI quota is out, fall back to Hugging Face
-  if (process.env.HUGGINGFACE_API_KEY) {
-    const hfResult = await tryProvider("Hugging Face", hfGen, chunks);
-    if (hfResult) return hfResult;
+  //If OpenAI quota runs out, fall back to Hugging Face to finish the rest
+  if (remainingChunks.length && process.env.HUGGINGFACE_API_KEY && remainingBudget()>0) {
+    try {
+      const genQuestions = await hfGen(remainingChunks,remainingBudget());
+      questions.push(...genQuestions);
+      remainingChunks = remainingChunks.slice(genQuestions.length);
+    } catch (err) {
+      console.warn("Hugging Face failed or quota exhausted");
+    }
   }
 
-  //if Hugging Face quota is out, fall back to Local
-  console.log("Fell back to Local");
-  return localFallback(chunks);
+  //If Hugging Face quota runs out, use local fallback to finish the rest
+  if (remainingChunks.length) {
+    console.warn("Using LOCAL fallback for remaining chunks");
+    const localQuestions = localFallback(remainingChunks,remainingBudget());
+    questions.push(...localQuestions);
+  }
+
+  if (questions.length === 0) {
+    throw new Error("All providers failed");
+  }
+
+  return questions.slice(0,max);
 }

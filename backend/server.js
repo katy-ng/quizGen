@@ -73,14 +73,39 @@ function cleanText(text) {
     .replace(/\s+/g, " ");     // normalize whitespace
 }
 
+//randomize the order of the answer choices (so correct answer isn't always A, since it's always the first one generated)
+//randomize using Fisher-Yates shuffle
+function shuffleChoices(array){
+  const choices = [...array];
+  for(let i=choices.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [choices[i],choices[j]] = [choices[j],choices[i]];
+  }
+  return choices;
+}
+//call this function to actually make the change of shuffling choices in the JSON file
+function randomizeQuestion(questionObj){
+  const shuffledChoices = shuffleChoices(questionObj.choices);
+  //fail immediately if the "correct answer" after shuffling doesn't match any of the choices
+  if (!shuffledChoices.includes(questionObj.correct_answer)) {
+      throw new Error("Correct answer lost during shuffle");
+  }
+
+  return{ //rewrite the JSON object's information so that the choices are shuffled
+    ...questionObj,
+    choices:shuffledChoices,
+    correct_answer:questionObj.correct_answer
+  };
+}
+
 /*parse pdfs for text: app.post() listends for POST requests at /upload-pdfs,
   upload.array() looks for files with field name "pdfs" and sends the pdfs to req.files*/
 app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
   try {
     console.log("FILES RECEIVED:", req.files.length);
     //taking in the global variables from frontend to backend
-    const questions = Number(req.body.questions);
-    const difficulty = req.body.difficulty;
+    let questions = Number(req.body.questions);
+    let difficulty = req.body.difficulty;
     globalThis.questions = questions;
     globalThis.difficulty = difficulty;
     let chunkedPDFs = []; //array for each pdf's filename and chunked text
@@ -133,21 +158,25 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       .flatMap(pdf => pdf.chunks);
     //calls openAI.mjs to generate the question bank using the chunked PDF text from array that was just filled
     let generatedQuestions = await generateQuestionBank(allChunks);
-    //clean generated questions by filtering out null, undefined, or malformed questions
-    generatedQuestions = generatedQuestions.filter(q =>
-      q &&
-      typeof q.question === "string" && 
-      Array.isArray(q.choices) && 
-      q.choices.length === 4 && 
-      typeof q.correct_answer === "string" && 
-      typeof q.explanation === "string" 
-    );
-    //fail if generatedQuestions has no data
+    //clean generated questions by filtering out null, undefined, or malformed questions, then randomize the choices
+    generatedQuestions = generatedQuestions
+      .filter(q =>
+        q &&
+        typeof q.question === "string" &&
+        Array.isArray(q.choices) &&
+        q.choices.length === 4 &&
+        typeof q.correct_answer === "string" &&
+        typeof q.explanation === "string" &&
+        q.choices.includes(q.correct_answer)
+      )
+      .map(randomizeQuestion);
+    //immediately fail if generatedQuestions has no data
     if (generatedQuestions.length === 0) {
       return res.status(500).json({
         error: "No questions could be generated. Try again or switch models."
       });
     }
+
 
 
     //initialize preQuizData as an empty array just in case there is no previously-made JSON file

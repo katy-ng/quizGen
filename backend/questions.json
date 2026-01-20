@@ -1,59 +1,37 @@
 {
   "generatedQuestions": [
     {
-      "question": "Which statement best explains \"grandmother\" as described in these notes?",
+      "question": "Which statement best explains \"molecules\" as described in these notes?",
       "choices": [
-        "Up until a few years ago, I was also closer to my grandmother when I was four than I was then.",
-        "Ng 1 Katy Ng Professor Marciano WRT 102 November 13, 2025 First Draft of Researched Argument Introduction I knew more Cantonese when I was four than I do now.",
-        "When I could speak Cantonese without stammering or awkward pauses between words, I would spend every afternoon in the backyard with my grandmother.",
-        "Underneath our canopy of luffas and long beans, my grandmother would entertain me with the Chinese folklore she grew up with in Guangdong."
+        "Molecules make up organelles, which are specialized structures within cells (for example, mitochondria and ribosomes).",
+        "Multiple organ systems make up an organism.",
+        "Atoms form molecules, such as water, proteins, and DNA.",
+        "Cells combine to form tissues, tissues form organs, and organs work together in organ systems."
       ],
-      "correct_answer": "Up until a few years ago, I was also closer to my grandmother when I was four than I was then.",
-      "explanation": "The correct answer was selected because it directly mentions \"grandmother\" in the PDF text."
+      "correct_answer": "Atoms form molecules, such as water, proteins, and DNA.",
+      "explanation": "The correct answer was selected because it directly mentions \"molecules\" in the PDF text."
     },
     {
-      "question": "Which statement best explains \"family\" as described in these notes?",
+      "question": "Which statement best explains \"carbohydrates\" as described in these notes?",
       "choices": [
-        "didn't know how to communicate my feelings to her, so I continued to lean into my American identity, ignoring my wish to connect more with my family and culture.",
-        "Ng 2 One day, though, when I noticed my grandmother working in the backyard alone in the summer heat, I pushed myself out of the comfort of our air conditioned house and worked alongside her.",
-        "I continued to help her with household chores and gardening throughout the summer, relearning Cantonese as she would once again share stories about her childhood and her favorite fables.",
-        "Since I was older, I developed a greater appreciation for these stories and for my grandmother, as she confided in me the uglier parts of her life, especially adapting to New York City after living in the countryside all her life, that a four-year-old would not understand."
+        "Carbohydrates provide quick energy and structural support, such as glucose and cellulose.",
+        "Proteins are made of amino acids and perform many functions, including enzymes, transport, and structure.",
+        "Lipids include fats, oils, and phospholipids; they store long-term energy and form cell membranes.",
+        "four types of macromolecules: carbohydrates, lipids, proteins, and nucleic acids."
       ],
-      "correct_answer": "didn't know how to communicate my feelings to her, so I continued to lean into my American identity, ignoring my wish to connect more with my family and culture.",
-      "explanation": "The correct answer was selected because it directly mentions \"family\" in the PDF text."
+      "correct_answer": "four types of macromolecules: carbohydrates, lipids, proteins, and nucleic acids.",
+      "explanation": "The correct answer was selected because it directly mentions \"carbohydrates\" in the PDF text."
     },
     {
-      "question": "Which statement best explains \"their\" as described in these notes?",
+      "question": "Which statement best explains \"genes\" as described in these notes?",
       "choices": [
-        "understanding of their ethnic culture and thus cannot relate to or even understand their immigrant family members.",
-        "Without much familial support or cultural guidance during their most crucial developmental years, many Asian Americans develop insecurities about their family and culture, only making them push both even further away.",
-        "In order to give Asian Americans more support to begin reconnecting, it is imperative that neighborhoods, especially those with little diversity, develop programs that promote different cultures, intergenerational engagement, and community-building, encouraging understanding and connection between generations.",
-        "Symptoms and Causes Ng 3 In many cases, Asian Americans feel disconnected from their family and culture because of their childhood experiences with both."
+        "Protein synthesis occurs in two main steps: transcription and translation.",
+        "Genes are segments of DNA that code for specific proteins.",
+        "During transcription, DNA is copied into messenger RNA (mRNA) in the nucleus.",
+        "DNA, Genes, and Protein Synthesis DNA contains the genetic instructions for building and maintaining an organism."
       ],
-      "correct_answer": "understanding of their ethnic culture and thus cannot relate to or even understand their immigrant family members.",
-      "explanation": "The correct answer was selected because it directly mentions \"their\" in the PDF text."
-    },
-    {
-      "question": "Which statement best explains \"their\" as described in these notes?",
-      "choices": [
-        "\" (Kang 2) Also, their parents would only give them \"snapshots\" of their lives in Vietnam, which the interviewees claimed prevented them from having \"firm roots in Vietnamese culture\" or developing empathy for their parents.",
-        "reporter Jay Caspian Kang related this issue to other Asian American second-generation immigrants, stating that \"Our parents came here to survive, and we learned that survival meant becoming more American than Asian.",
-        "However, their parents \"kind of assumed that [they] would just know\" the Vietnamese language and culture, forgetting that their children had not experienced traditions like weddings or gatherings firsthand.",
-        "(Najolia 34) Although being fluent in English would be useful at school, growing up with a language barrier and barely any understanding of their family history would make communication extremely difficult between children and their parents, which strips their relationship of crucial aspects like trust or understanding."
-      ],
-      "correct_answer": "\" (Kang 2) Also, their parents would only give them \"snapshots\" of their lives in Vietnam, which the interviewees claimed prevented them from having \"firm roots in Vietnamese culture\" or developing empathy for their parents.",
-      "explanation": "The correct answer was selected because it directly mentions \"their\" in the PDF text."
-    },
-    {
-      "question": "Which statement best explains \"their\" as described in these notes?",
-      "choices": [
-        "It is standard that Chinese parents show their love through actions like cooking or giving advice for their children, but since their children were not taught or immersed in Chinese culture and they lack proper communication with their parents, all the children see is that their parents are unnecessarily harsh on them.",
-        "Chinese parents, for example, often retain an authoritative style of parenting and have high expectations without obvious support.",
-        "This \"acculturation mismatch\" between parent and child \"leads to \"conflicting cultural expectations within the family\" because intergenerational cultural conflict is \"the product of deep-seated value differences on topics\".",
-        "(Lui 434) As a result of improper communication and misguided parenting, Asian American children do not develop a strong relationship with their parents, disrupting the crucial family support network needed for cultural exploration, which ultimately hinders their development of a strong sense of cultural identity."
-      ],
-      "correct_answer": "It is standard that Chinese parents show their love through actions like cooking or giving advice for their children, but since their children were not taught or immersed in Chinese culture and they lack proper communication with their parents, all the children see is that their parents are unnecessarily harsh on them.",
-      "explanation": "The correct answer was selected because it directly mentions \"their\" in the PDF text."
+      "correct_answer": "DNA, Genes, and Protein Synthesis DNA contains the genetic instructions for building and maintaining an organism.",
+      "explanation": "The correct answer was selected because it directly mentions \"genes\" in the PDF text."
     }
   ]
 }

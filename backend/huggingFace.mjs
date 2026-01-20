@@ -98,6 +98,9 @@ async function callHuggingFace(prompt) {
     })
   });
 
+  if (res.status === 429) {
+    throw new Error("HF_QUOTA_EXHAUSTED");
+  }
   if (!res.ok) {
     throw new Error(`HF API error: ${res.status}`);
   }
@@ -114,13 +117,13 @@ async function callHuggingFace(prompt) {
 
 /* ---------------- MAIN EXPORT ---------------- */
 
-export async function generateQuestionBank(pdfChunkArray) {
+export async function generateQuestionBank(pdfChunkArray, limit) {
   const questions = [];
 
   // ---- MOCK MODE (KEEP THIS, IT'S GOOD) ----
   if (process.env.MOCK_AI === "true") {
     console.log("⚠️ MOCK MODE ENABLED — No Hugging Face calls");
-    for (let i = 0; i < pdfChunkArray.length; i++) {
+    for (let i = 0; i < Math.min(pdfChunkArray.length, limit); i++) {
       questions.push({
         question: `Mock question #${i + 1}`,
         choices: ["A", "B", "C", "D"],
@@ -133,6 +136,7 @@ export async function generateQuestionBank(pdfChunkArray) {
 
   // ---- REAL MODE ----
   for (const chunk of pdfChunkArray) {
+    if(questions.length>=limit){break}
     let attempts = 0;
     let success = false;
 
@@ -153,6 +157,10 @@ export async function generateQuestionBank(pdfChunkArray) {
         }
         console.log("RAW HF OUTPUT:\n", raw);
       } catch (err) {
+        if (err.message === "HF_QUOTA_EXHAUSTED") {
+          console.warn("Hugging Face quota exhausted");
+          throw err;
+        }
         console.error(`HF error (attempt ${attempts}):`, err.message);
       }
     }
