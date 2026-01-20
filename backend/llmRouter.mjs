@@ -89,32 +89,33 @@ function localFallback(chunks,limit) {
   return questions;
 }
 
+/* ---------------- CHUNK SELECTION ---------------- */
 
-/* ---------------- PROVIDER WRAPPER ---------------- */
-
-async function tryProvider(name, fn, chunks) {
-  try {
-    console.log(`Attempting ${name} provider...`);
-    const result = await fn(chunks);
-
-    if (!Array.isArray(result) || result.length === 0) {
-      throw new Error(`${name} returned no valid questions`);
-    }
-
-    console.log(`${name} succeeded`);
-    return result;
-  } catch (err) {
-    console.error(`${name} failed:`, err.message);
-    return null;
+/**
+ * Selects chunks evenly across the document so questions
+ * cover the entire PDF, not just the beginning.
+ */
+function selectChunksForCoverage(chunks, questionCount) {
+  if (questionCount >= chunks.length) {
+    return [...chunks];
   }
+
+  const step = chunks.length / questionCount;
+  const selected = [];
+
+  for (let i = 0; i < questionCount; i++) {
+    const index = Math.floor(i * step);
+    selected.push(chunks[index]);
+  }
+
+  return selected;
 }
 
 /* ---------------- MAIN EXPORT ---------------- */
-export async function generateQuestionBank(chunks) {
-
-  let questions = [];
-  let remainingChunks = [...chunks];
+export async function generateQuestionBank(allChunks) {
   const max = globalThis.questions;
+  let chunks = selectChunksForCoverage(allChunks,max); //chunks array only includes the chunks from allChunks that were assigned a question
+  let questions = [];
   let remainingBudget = () => max - questions.length; //function so that it's recalc every time you call it (easier than having to remember to recalc a variable before using it)
 
   //MOCK MODE
@@ -126,32 +127,32 @@ export async function generateQuestionBank(chunks) {
   //Try using OpenAI first
   if (process.env.OPENAI_API_KEY && remainingBudget()>0) {
     try {
-      const genQuestions = await openaiGen(remainingChunks,remainingBudget());
+      const genQuestions = await openaiGen(chunks,remainingBudget());
       questions.push(...genQuestions);
-      remainingChunks = remainingChunks.slice(genQuestions.length);
+      chunks = chunks.slice(genQuestions.length); //remove chunks that have already been used before continuing to gen more questions
     } catch (err) {
       console.warn("OpenAI failed or quota exhausted");
     }
   }
 
   //If OpenAI quota runs out, fall back to Hugging Face to finish the rest
-  if (remainingChunks.length && process.env.HUGGINGFACE_API_KEY && remainingBudget()>0) {
+  if (process.env.HUGGINGFACE_API_KEY && remainingBudget()>0) {
     try {
-      const genQuestions = await hfGen(remainingChunks,remainingBudget());
+      const genQuestions = await hfGen(chunks,remainingBudget());
       questions.push(...genQuestions);
-      remainingChunks = remainingChunks.slice(genQuestions.length);
+      chunks = chunks.slice(genQuestions.length); //remove chunks that have already been used before continuing to gen more questions
     } catch (err) {
       console.warn("Hugging Face failed or quota exhausted");
     }
   }
 
   //If Hugging Face quota runs out, use local fallback to finish the rest
-  if (remainingChunks.length) {
+  if (remainingBudget() > 0 && chunks.length>0) {
     console.warn("Using LOCAL fallback for remaining chunks");
-    const localQuestions = localFallback(remainingChunks,remainingBudget());
+    const localQuestions = localFallback(chunks,remainingBudget());
     questions.push(...localQuestions);
   }
-
+  
   if (questions.length === 0) {
     throw new Error("All providers failed");
   }
