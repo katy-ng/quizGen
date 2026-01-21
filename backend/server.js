@@ -98,6 +98,33 @@ function randomizeQuestion(questionObj){
   };
 }
 
+// ---------- ANALYZE PDFs (NO AI, CHEAP) ----------
+app.post("/analyze-pdfs", upload.array("pdfs"), async (req, res) => {
+  try {
+    let totalChunks = 0;
+
+    for (const file of req.files) {
+      if (file.mimetype !== "application/pdf") continue;
+
+      const parsed = await pdfParse(file.buffer);
+      if (!parsed.text || parsed.text.trim().length < 50) continue;
+
+      const words = parsed.text.split(/\s+/).length;
+      const wordCap = 350;
+      totalChunks += Math.ceil(words / wordCap);
+    }
+
+    res.json({
+      success: true,
+      maxQuestions: Math.max(1, totalChunks)
+    });
+  } catch (err) {
+    console.error("ANALYZE ERROR:", err);
+    res.status(500).json({ error: "Failed to analyze PDFs" });
+  }
+});
+
+
 /*parse pdfs for text: app.post() listends for POST requests at /upload-pdfs,
   upload.array() looks for files with field name "pdfs" and sends the pdfs to req.files*/
 app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
@@ -200,8 +227,7 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
     //if try code is successful, sends "success response" with quizData array
     res.json({
       success: true,
-      generatedQuestions:prevQuizData.generatedQuestions,
-      maxQuestions:prevQuizData.generatedQuestions.length
+      generatedQuestions:prevQuizData.generatedQuestions
     });
 
   } catch (err) {

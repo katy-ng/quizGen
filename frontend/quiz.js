@@ -13,6 +13,7 @@ const pdfInput = document.getElementById("pdf-input");
 const pdfDisplayContainer = document.querySelector('.pdf-display-container');
 const submitButton = document.querySelector('.submit-button');
 const generateButton = document.querySelector('.generate-button-disabled');
+//const loadMessage = document.querySelector('.load-message');
 
 //number of questions slider
 const numberQuestionContainer = document.querySelector('.number-question-container');
@@ -45,6 +46,7 @@ let scoreArray = []; //array of whether the user got the corresponding index que
 let score = 0;
 let progress = 0;
 let submitted = false;
+let isLoading = false;
 
 const quizState = {
   questions:5,
@@ -76,7 +78,7 @@ function setSliderValue(value) {
   questionCount.textContent = value;
 }
 function updateSliderFromMouse(e) {
-  const rect = numberQuestionContainer.getBoundingClientRect();
+  const rect = sliderTrack.getBoundingClientRect();
 
   if (!rect.width) return;
 
@@ -93,7 +95,7 @@ function updateSliderFromMouse(e) {
 
   setSliderValue(value);
 }
-numberQuestionContainer.addEventListener("mousedown", e => {
+sliderTrack.addEventListener("mousedown", e => {
   isDragging = true;
   updateSliderFromMouse(e);
 });
@@ -220,10 +222,12 @@ pdfInput.addEventListener("change", async () => {
       `
     }
   pdfInput.value=""; //so you can reupload the same file
-  const data = await uploadPDFsToServer(uploadedPDFs);
+
+  const data = await analyzePDFs(uploadedPDFs);
   maxQuestions = data.maxQuestions;
-  setSliderValue(Math.min(currentQuestions,maxQuestions));
-  numberClicked=true;
+  if(maxQuestions>30){maxQuestions=30}
+  setSliderValue(Math.min(currentQuestions, maxQuestions));
+  numberClicked = true;
   quizReady();
 });
 
@@ -238,10 +242,30 @@ generateButton.addEventListener("click", async () => {
 
   //gen button only works if user selected all settings
   if(quizReady()){
+    isLoading = true;
+    let loadMessage = document.createElement("div");
+    loadMessage.classList.add("load-message");
+    loadingMessage(loadMessage);
     await uploadPDFsToServer(uploadedPDFs);
     await loadQuiz();
+    isLoading = false;
+    loadingMessage(loadMessage);
   }
 });
+
+function loadingMessage(loadMessage){
+  if(isLoading){
+    let messages = ["Generating quiz...","Hang on there...","Loading...","Thinking..."];
+    let choice = Math.floor(Math.random()*messages.length) //pick a random integer 0,1,2,or 3 (since 4=messages.length and .random is exclusive)
+    let message = messages[choice]; //randomly choose a loading message
+    loadMessage.innerHTML=`
+      <p>${message}</p>
+    `
+    questionsContainer.appendChild(loadMessage);
+  } else {
+    questionsContainer.removeChild(loadMessage);
+  }
+}
 
 function quizReady(){
   if(uploadedPDFs.length>0 && numberClicked && difficultyClicked){
@@ -255,6 +279,25 @@ function quizReady(){
     return false;
   }
 }
+
+async function analyzePDFs(files) {
+  const formData = new FormData();
+  Array.from(files).forEach(file => {
+    formData.append("pdfs", file);
+  });
+
+  const res = await fetch("/analyze-pdfs", {
+    method: "POST",
+    body: formData
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to analyze PDFs");
+  }
+
+  return await res.json();
+}
+
 
 async function uploadPDFsToServer(files) {
   const formData = new FormData(); //info collected from an HTML form

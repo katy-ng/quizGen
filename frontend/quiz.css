@@ -661,3 +661,15 @@ body{
     background-color:var(--dark-yellow);
     transition: all 0.3s ease;
 }
+
+.load-message{
+    width:80%;
+    height:auto;
+    display:flex;
+    justify-content:center;
+    align-content:center;
+    padding:1rem;
+}
+.load-message p{
+    font-size:3rem;
+}
