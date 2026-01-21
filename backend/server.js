@@ -106,8 +106,6 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
     //taking in the global variables from frontend to backend
     let questions = Number(req.body.questions);
     let difficulty = req.body.difficulty;
-    globalThis.questions = questions;
-    globalThis.difficulty = difficulty;
     let chunkedPDFs = []; //array for each pdf's filename and chunked text
     for (const file of req.files) { //looks at each uploaded file stored in req.files
       if (file.mimetype !== "application/pdf") {
@@ -134,8 +132,9 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
         a question bank, pull questions at random from it to ensure all questions can be used)*/
         // or just combine the remainder with the last chunk? risk that last chunk being too long though
       const totalWords = parsedPDFs.text.split(/\s+/).length; //can't do parsedPDFs.text.length to get length bc that's char count, need the word count
-      let wordCap = Math.floor(totalWords / globalThis.questions);
-      if(wordCap > 300){ wordCap = 300 } //prompts cannot be more than 1000 words long
+      /*let wordCap = Math.floor(totalWords / globalThis.questions);
+      if(wordCap > 350){ wordCap = 350 } //prompts cannot be more than 350 words long */
+      let wordCap = 350;
       console.log("Extracted text word count:", totalWords, " / Calculated WordCap:", wordCap);
       let chunks = chunkText(parsedPDFs.text, wordCap); //chunk the parsed data every (wordCap) words
       console.log("Number of chunks:", chunks.length);
@@ -157,7 +156,11 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
       .filter(pdf => Array.isArray(pdf.chunks)) 
       .flatMap(pdf => pdf.chunks);
     //calls openAI.mjs to generate the question bank using the chunked PDF text from array that was just filled
-    let generatedQuestions = await generateQuestionBank(allChunks);
+    let generatedQuestions = await generateQuestionBank(
+      allChunks,
+      questions,
+      difficulty
+    );
     //clean generated questions by filtering out null, undefined, or malformed questions, then randomize the choices
     generatedQuestions = generatedQuestions
       .filter(q =>
@@ -197,7 +200,8 @@ app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
     //if try code is successful, sends "success response" with quizData array
     res.json({
       success: true,
-      generatedQuestions:prevQuizData.generatedQuestions
+      generatedQuestions:prevQuizData.generatedQuestions,
+      maxQuestions:prevQuizData.generatedQuestions.length
     });
 
   } catch (err) {

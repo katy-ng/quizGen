@@ -6,8 +6,6 @@ Purpose:
 */
 
 /*----------Variables----------*/
-globalThis.questions=5;
-globalThis.difficulty="easy";
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 const uploadButton = document.getElementById("upload-button");
@@ -15,10 +13,23 @@ const pdfInput = document.getElementById("pdf-input");
 const pdfDisplayContainer = document.querySelector('.pdf-display-container');
 const submitButton = document.querySelector('.submit-button');
 const generateButton = document.querySelector('.generate-button-disabled');
+
+//number of questions slider
 const numberQuestionContainer = document.querySelector('.number-question-container');
-const difficultySelectContainer = document.querySelector('.difficulty-select-container');
+const sliderTrack = document.querySelector(".slider-track");
+const sliderFill = document.querySelector(".slider-fill");
+const sliderThumb = document.querySelector(".slider-thumb");
+const questionCount = document.getElementById("question-count");
 let numberClicked = false;
+let isDragging = false;
+let minQuestions = 1;
+let maxQuestions = 1;
+let currentQuestions = 1;
+
+//select difficulty 
+const difficultySelectContainer = document.querySelector('.difficulty-select-container');
 let difficultyClicked = false;
+
 const questionsContainer = document.querySelector('.questions-container');
 const progressTitleContainer = document.querySelector('.progress-title-container');
 const answersContainer = document.querySelector('.answers-container');
@@ -35,6 +46,11 @@ let score = 0;
 let progress = 0;
 let submitted = false;
 
+const quizState = {
+  questions:5,
+  difficulty:"easy"
+};
+
 //generate quiz button turns into a reset button, which resets entire application to before any user interaction
 //generate quiz button doesn't work until you've done all the prev steps
 
@@ -46,19 +62,51 @@ window.addEventListener("load", async () => {
 });
 
 /*----------Num Questions & Difficulty Buttons----------*/
-numberQuestionContainer.addEventListener("click",(event)=>{
-  //if the clicked element in the container was a number button, then update UI and variables 
-  const clickedElement = event.target; 
-  if(!clickedElement.classList.contains("number-button")) return;
-  document.querySelectorAll(".number-button").forEach(button=>
-    button.classList.remove("number-selected")
+//update var involved in calc total number of questions to match with current 
+function setSliderValue(value) {
+  if (!Number.isFinite(value)) return;
+  value = Math.max(minQuestions, Math.min(value, maxQuestions));
+  currentQuestions = value;
+  quizState.questions = value;
+  
+  //fills slider with yellow as you move it along
+  const percent = (value - minQuestions) / (maxQuestions - minQuestions || 1) * 100;
+  sliderFill.style.width = `${percent}%`;
+  sliderThumb.style.left = `${percent}%`;
+  questionCount.textContent = value;
+}
+function updateSliderFromMouse(e) {
+  const rect = numberQuestionContainer.getBoundingClientRect();
+
+  if (!rect.width) return;
+
+  const x = Math.min(
+    Math.max(e.clientX - rect.left, 0),
+    rect.width
   );
-  clickedElement.classList.add("number-selected");
-  globalThis.questions = Number(clickedElement.textContent);
-  console.log("QUESTIONS:",globalThis.questions);
-  numberClicked=true;
+
+  const percent = x / rect.width;
+
+  const value = Math.round(
+    minQuestions + percent * (maxQuestions - minQuestions)
+  );
+
+  setSliderValue(value);
+}
+numberQuestionContainer.addEventListener("mousedown", e => {
+  isDragging = true;
+  updateSliderFromMouse(e);
+});
+document.addEventListener("mousemove", e => {
+  if (isDragging) updateSliderFromMouse(e);
+});
+document.addEventListener("mouseup", () => {
+  isDragging = false;
   quizReady();
 });
+/* initialize */
+setSliderValue(1);
+
 difficultySelectContainer.addEventListener("click",(event)=>{
   //if the clicked element in the container was a difficulty button, then update UI and variables 
   const clickedElement = event.target; 
@@ -67,8 +115,8 @@ difficultySelectContainer.addEventListener("click",(event)=>{
     button.classList.remove("difficulty-selected")
   );
   clickedElement.classList.add("difficulty-selected");
-  globalThis.difficulty = clickedElement.textContent;
-  console.log("DIFFICULTY:",globalThis.difficulty);
+  quizState.difficulty = clickedElement.textContent;
+  console.log("DIFFICULTY:",quizState.difficulty);
   difficultyClicked=true;
   quizReady();
 });
@@ -172,6 +220,11 @@ pdfInput.addEventListener("change", async () => {
       `
     }
   pdfInput.value=""; //so you can reupload the same file
+  const data = await uploadPDFsToServer(uploadedPDFs);
+  maxQuestions = data.maxQuestions;
+  setSliderValue(Math.min(currentQuestions,maxQuestions));
+  numberClicked=true;
+  quizReady();
 });
 
 generateButton.addEventListener("click", async () => {
@@ -203,7 +256,6 @@ function quizReady(){
   }
 }
 
-
 async function uploadPDFsToServer(files) {
   const formData = new FormData(); //info collected from an HTML form
 
@@ -211,8 +263,8 @@ async function uploadPDFsToServer(files) {
   Array.from(files).forEach(file => {
     formData.append("pdfs", file); //"pdfs" must match backend field name
   });
-  formData.append("questions", globalThis.questions);
-  formData.append("difficulty", globalThis.difficulty);
+  formData.append("questions", quizState.questions);
+  formData.append("difficulty", quizState.difficulty);
   /*sends uploaded pdfs in formData from public browser to private server (to be parsed)
     > await ensures the rest of the code waits for the upload to finish first
     > fetch() makes HTTP request, /upload-pdfs is the server's URL endpoint and
@@ -224,7 +276,17 @@ async function uploadPDFsToServer(files) {
   if (!response.ok) { 
     throw new Error(`Server error: ${response.status}`);
   }
-  return await response.json();
+  const data = await response.json();
+
+  maxQuestions = data.maxQuestions;
+
+  // clamp slider value
+  setSliderValue(Math.min(currentQuestions, maxQuestions));
+
+  numberClicked = true;
+  quizReady();
+
+  return data;
 }
 
 /*questions display one by one, click next/prev buttons to navigate through quiz*/
@@ -272,7 +334,7 @@ async function displayStats(){
   } else {
     progressTitleContainer.innerHTML = `
       <h1>PROGRESS</h1>
-      <h2>${progress} / ${globalThis.questions}</h2>
+      <h2>${progress} / ${quizState.questions}</h2>
     `
   }
 
@@ -321,7 +383,7 @@ async function displayStats(){
   if(submitted){
     scoreTitleContainer.innerHTML = `
       <h1>SCORE</h1>
-      <h2>${score} / ${globalThis.questions}</h2>
+      <h2>${score} / ${quizState.questions}</h2>
     `
   } else {
     scoreTitleContainer.innerHTML = `

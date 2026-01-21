@@ -18,14 +18,14 @@ const client = new OpenAI({
 });
 
 //generate one multiple choice question
-async function generateOneQuestion(chunk) {
+async function generateOneQuestion(chunk,difficulty) {
   let response;
   try {
     response = await client.responses.create({
       model: "gpt-4.1",
       input: `
         You are an educational assistant.
-        Generate one ${globalThis.difficulty}-difficulty multiple-choice question
+        Generate one ${difficulty}-difficulty multiple-choice question
         based ONLY on these notes:
 
         ${chunk}
@@ -71,7 +71,7 @@ async function generateOneQuestion(chunk) {
 //generates a JavaScript object of questions and their answer choices; creates one set per chunk sent
 //stores each set of question/answers in JSON format as a JavaScript object, in an array
 //export functions are accessible by other files, just import the function from the file you're using it in
-export async function generateQuestionBank(pdfChunkArray,limit) {
+export async function generateQuestionBank(pdfChunkArray,{limit,difficulty}) {
   //give openAI instructions (how to speak + structure responses)
   const questions = [];
 
@@ -98,7 +98,7 @@ export async function generateQuestionBank(pdfChunkArray,limit) {
   for (const chunk of pdfChunkArray) {
     if(questions.length>=limit){break}
     try {
-      const questionObject = await generateOneQuestion(chunk);
+      const questionObject = await generateOneQuestion(chunk,difficulty);
       if (questionObject) {
         questions.push(questionObject);
         console.log("OpenAI success");

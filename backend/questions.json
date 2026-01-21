@@ -1,37 +1,15 @@
 {
   "generatedQuestions": [
     {
-      "question": "Which statement best explains \"molecules\" as described in these notes?",
+      "question": "Which statement best explains \"cells\" as described in these notes?",
       "choices": [
-        "Molecules make up organelles, which are specialized structures within cells (for example, mitochondria and ribosomes).",
-        "Multiple organ systems make up an organism.",
-        "Atoms form molecules, such as water, proteins, and DNA.",
-        "Cells combine to form tissues, tissues form organs, and organs work together in organ systems."
+        "Living organisms maintain homeostasis, meaning they regulate internal conditions such as temperature, pH, and water balance.",
+        "All living things share several key characteristics.",
+        "They are made of one or more cells, which are the basic units of life.",
+        "Characteristics of Life Biology is the study of living organisms and their interactions with the environment."
       ],
-      "correct_answer": "Atoms form molecules, such as water, proteins, and DNA.",
-      "explanation": "The correct answer was selected because it directly mentions \"molecules\" in the PDF text."
-    },
-    {
-      "question": "Which statement best explains \"carbohydrates\" as described in these notes?",
-      "choices": [
-        "Carbohydrates provide quick energy and structural support, such as glucose and cellulose.",
-        "Proteins are made of amino acids and perform many functions, including enzymes, transport, and structure.",
-        "Lipids include fats, oils, and phospholipids; they store long-term energy and form cell membranes.",
-        "four types of macromolecules: carbohydrates, lipids, proteins, and nucleic acids."
-      ],
-      "correct_answer": "four types of macromolecules: carbohydrates, lipids, proteins, and nucleic acids.",
-      "explanation": "The correct answer was selected because it directly mentions \"carbohydrates\" in the PDF text."
-    },
-    {
-      "question": "Which statement best explains \"genes\" as described in these notes?",
-      "choices": [
-        "Protein synthesis occurs in two main steps: transcription and translation.",
-        "Genes are segments of DNA that code for specific proteins.",
-        "During transcription, DNA is copied into messenger RNA (mRNA) in the nucleus.",
-        "DNA, Genes, and Protein Synthesis DNA contains the genetic instructions for building and maintaining an organism."
-      ],
-      "correct_answer": "DNA, Genes, and Protein Synthesis DNA contains the genetic instructions for building and maintaining an organism.",
-      "explanation": "The correct answer was selected because it directly mentions \"genes\" in the PDF text."
+      "correct_answer": "They are made of one or more cells, which are the basic units of life.",
+      "explanation": "The correct answer was selected because it directly mentions \"cells\" in the PDF text."
     }
   ]
 }

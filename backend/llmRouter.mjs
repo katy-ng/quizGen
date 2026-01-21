@@ -110,11 +110,10 @@ async function tryProvider(name, fn, chunks) {
 }
 
 /* ---------------- MAIN EXPORT ---------------- */
-export async function generateQuestionBank(chunks) {
+export async function generateQuestionBank(chunks,max,difficulty) {
 
   let questions = [];
   let remainingChunks = [...chunks];
-  const max = globalThis.questions;
   let remainingBudget = () => max - questions.length; //function so that it's recalc every time you call it (easier than having to remember to recalc a variable before using it)
 
   //MOCK MODE
@@ -126,7 +125,10 @@ export async function generateQuestionBank(chunks) {
   //Try using OpenAI first
   if (process.env.OPENAI_API_KEY && remainingBudget()>0) {
     try {
-      const genQuestions = await openaiGen(remainingChunks,remainingBudget());
+      const genQuestions = await openaiGen(remainingChunks, {
+        limit: remainingBudget(),
+        difficulty
+      });
       questions.push(...genQuestions);
       remainingChunks = remainingChunks.slice(genQuestions.length);
     } catch (err) {
@@ -137,7 +139,10 @@ export async function generateQuestionBank(chunks) {
   //If OpenAI quota runs out, fall back to Hugging Face to finish the rest
   if (remainingChunks.length && process.env.HUGGINGFACE_API_KEY && remainingBudget()>0) {
     try {
-      const genQuestions = await hfGen(remainingChunks,remainingBudget());
+      const genQuestions = await hfGen(remainingChunks, {
+        limit: remainingBudget(),
+        difficulty
+      });
       questions.push(...genQuestions);
       remainingChunks = remainingChunks.slice(genQuestions.length);
     } catch (err) {

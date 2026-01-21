@@ -24,11 +24,11 @@ const HF_HEADERS = {
 
 /* ---------------- PROMPT TEMPLATE ---------------- */
 
-function buildPrompt(chunk) {
+function buildPrompt(chunk,difficulty) {
   return `
 You are an educational assistant.
 
-Generate ONE ${globalThis.difficulty}-difficulty multiple-choice question
+Generate ONE ${difficulty}-difficulty multiple-choice question
 based ONLY on the text below.
 
 RULES (VERY IMPORTANT):
@@ -117,7 +117,7 @@ async function callHuggingFace(prompt) {
 
 /* ---------------- MAIN EXPORT ---------------- */
 
-export async function generateQuestionBank(pdfChunkArray, limit) {
+export async function generateQuestionBank(pdfChunkArray, {limit,difficulty}) {
   const questions = [];
 
   // ---- MOCK MODE (KEEP THIS, IT'S GOOD) ----
@@ -144,7 +144,7 @@ export async function generateQuestionBank(pdfChunkArray, limit) {
       attempts++;
 
       try {
-        const prompt = buildPrompt(chunk);
+        const prompt = buildPrompt(chunk,difficulty);
         const raw = await callHuggingFace(prompt);
         const parsed = extractJSON(raw);
 
