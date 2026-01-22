@@ -238,6 +238,7 @@ pdfInput.addEventListener("change", async () => {
 /*---------------------GENERATE THE QUIZ---------------------*/
 generateButton.addEventListener("click", async () => {
   //reset prev gen quiz
+  quizState.questions = 1;
   score = 0;
   progress = 0;
   submitted = false;
@@ -247,6 +248,7 @@ generateButton.addEventListener("click", async () => {
   displayStats();
   questionsContainer.innerHTML = '';
   answersContainer.innerHTML= '';
+  
 
   //gen button only works if user selected all settings
   if(quizReady()){
