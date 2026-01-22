@@ -3,17 +3,29 @@ Purpose:
   1. Capture file input, send PDF to backend using fetch() and FormData
   2. Display each question and answer choices of the quiz
   3. Add functionality to buttons, etc.
+  add? generate quiz button turns into a reset button, which resets entire application to before any user interaction
 */
 
-/*----------Variables----------*/
+/*---------------------VARIABLES---------------------*/
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
+//var for settings
 const uploadButton = document.getElementById("upload-button");
 const pdfInput = document.getElementById("pdf-input");
 const pdfDisplayContainer = document.querySelector('.pdf-display-container');
 const submitButton = document.querySelector('.submit-button');
 const generateButton = document.querySelector('.generate-button-disabled');
-//const loadMessage = document.querySelector('.load-message');
+const pdfMessage = document.querySelector('.pdf-message');
+let uploadedSizeSum = 0;
+let uploadedPDFs = [];
+let currentQuestionIndex = 0;
+let questionArray = []; //array of generated quiz questions
+let answerArray = []; //array of the user's selected answers
+let scoreArray = []; //array of whether the user got the corresponding index question right or wrong 
+let score = 0;
+let progress = 0;
+let submitted = false;
+let isLoading = false;
 
 //number of questions slider
 const numberQuestionContainer = document.querySelector('.number-question-container');
@@ -31,68 +43,58 @@ let currentQuestions = 1;
 const difficultySelectContainer = document.querySelector('.difficulty-select-container');
 let difficultyClicked = false;
 
+//display questions
 const questionsContainer = document.querySelector('.questions-container');
 const progressTitleContainer = document.querySelector('.progress-title-container');
+
+//progress sidebar
 const answersContainer = document.querySelector('.answers-container');
 const scoreTitleContainer = document.querySelector('.score-title-container');
-const pdfMessage = document.querySelector('.pdf-message');
-
-let uploadedSizeSum = 0;
-const uploadedPDFs = [];
-let currentQuestionIndex = 0;
-let questionArray = []; //array of generated quiz questions
-let answerArray = []; //array of the user's selected answers
-let scoreArray = []; //array of whether the user got the corresponding index question right or wrong 
-let score = 0;
-let progress = 0;
-let submitted = false;
-let isLoading = false;
 
 const quizState = {
   questions:5,
   difficulty:"easy"
 };
 
-//generate quiz button turns into a reset button, which resets entire application to before any user interaction
-//generate quiz button doesn't work until you've done all the prev steps
 
-//send message to server.js every time quiz.html reloads (to reset backend, like clearing questions.json)
+
+/*---------------------BEHAVIOR FOR REFRESHING THE PAGE---------------------*/
+//send a message to server.js telling when quiz.html is reloaded (to reset backend, like clearing questions.json)
 //IF MULTIPLE PEOPLE USE THIS SITE AND LOAD QUIZ.HTML, THEY WILL CLEAR EACH OTHER'S QUESTIONS
 window.addEventListener("load", async () => {
   await fetch("/clear-questions", { method: "POST" });
   console.log("🧹 Cleared questions.json on page refresh");
 });
 
-/*----------Num Questions & Difficulty Buttons----------*/
-//update var involved in calc total number of questions to match with current 
+
+/*---------------------BUTTONS/SLIDER---------------------*/
+
+/*----------Num Questions Slider----------*/
+//update all variables involved to match with info gained from updateSliderFromMouse()
 function setSliderValue(value) {
   if (!Number.isFinite(value)) return;
   value = Math.max(minQuestions, Math.min(value, maxQuestions));
   currentQuestions = value;
   quizState.questions = value;
-  
+
   //fills slider with yellow as you move it along
   const percent = (value - minQuestions) / (maxQuestions - minQuestions || 1) * 100;
   sliderFill.style.width = `${percent}%`;
   sliderThumb.style.left = `${percent}%`;
   questionCount.textContent = value;
 }
-function updateSliderFromMouse(e) {
+//splits slider track evenly into the correct amount of questions, then tracks the cursor + relates its position to a section/value
+function updateSliderFromMouse(e) { 
   const rect = sliderTrack.getBoundingClientRect();
-
   if (!rect.width) return;
-
   const x = Math.min(
     Math.max(e.clientX - rect.left, 0),
     rect.width
   );
-
   const percent = x / rect.width;
-
   const value = Math.round(
     minQuestions + percent * (maxQuestions - minQuestions)
   );
-
   setSliderValue(value);
 }
 sliderTrack.addEventListener("mousedown", e => {
@@ -104,11 +106,11 @@ document.addEventListener("mousemove", e => {
 });
 document.addEventListener("mouseup", () => {
   isDragging = false;
-  quizReady();
+  quizReady(); //one prereq of generating the quiz is done (also originally done upon uploading a pdf bc pre-selects a num of questions for you)
 });
-/* initialize */
-setSliderValue(1);
+setSliderValue(1); //initialize as 1 first
 
+/*----------Difficulty Selector Buttons----------*/
 difficultySelectContainer.addEventListener("click",(event)=>{
   //if the clicked element in the container was a difficulty button, then update UI and variables 
   const clickedElement = event.target; 
@@ -120,18 +122,18 @@ difficultySelectContainer.addEventListener("click",(event)=>{
   quizState.difficulty = clickedElement.textContent;
   console.log("DIFFICULTY:",quizState.difficulty);
   difficultyClicked=true;
-  quizReady();
+  quizReady(); //one prereq of generating the quiz is done
 });
 
 
-/*----------Upload PDFs----------*/
+
+/*---------------------UPLOADING PDFS---------------------*/
+//to keep the input element invisible, make button adopt its functionality while being able to customize the upload button's appearance
 uploadButton.addEventListener("click",() => {
   pdfInput.click(); 
-  /*to keep the input element invisible, make button adopt its functionality while
-  being able to customize the upload button's appearance*/
 });
 
-
+//when file(s) is uploaded to pdfInput, check if file(s) is valid, display valid file(s)
 pdfInput.addEventListener("change", async () => {
   const files = pdfInput.files;
   let problem = false;
@@ -142,7 +144,7 @@ pdfInput.addEventListener("change", async () => {
   let successfulUploads = 0;
   for(const file of files){
     /*----------MAINTENANCE----------*/
-    //check if file is pdf or a duplicate
+    //check if file is pdf, duplicate, and adequately sized (sum of all files < 5MB)
     if(file.type !=="application/pdf"){
       problem=true;
       continue;
@@ -156,13 +158,13 @@ pdfInput.addEventListener("change", async () => {
       problem=true;
       continue;
     }
-    //if file is a new and adequately sized pdf, then add to the array of uploaded pdfs (manually upkeep this array bc removing from pdfInput.files is impossible)
+    //if file(s) is valid, then add it to the array of uploaded pdfs (made my own array for this because pdfInput.files is unreliable)
     uploadedPDFs.push(file);
     uploadedSizeSum+=file.size;
     successfulUploads++;
-    quizReady();
+    quizReady(); //one prereq of generating the quiz is done
 
-    /*----------CREATE UI----------*/
+    /*----------DESIGN THE PDF DISPLAY----------*/
     const wrapper = document.createElement("div"); //need a div wrapper over each pdf display to modify appearance
     wrapper.classList.add("pdf-wrapper");
     const canvas = document.createElement("canvas");
@@ -179,7 +181,7 @@ pdfInput.addEventListener("change", async () => {
         let current = uploadedPDFs[i];
         if(current.name===file.name && current.size===file.size && current.lastModified===file.lastModified){
           uploadedPDFs.splice(i,1);
-          quizReady();
+          quizReady(); //if remove the only uploaded pdf, then quiz is no longer ready
           uploadedSizeSum-=current.size;
           pdfMessage.innerHTML = `
             <p>${(uploadedSizeSum/1024/1024).toFixed(2)} / 5MB <br>
@@ -190,7 +192,7 @@ pdfInput.addEventListener("change", async () => {
       }
     });
 
-    /*----------RENDER PDF DISPLAY----------*/
+    /*----------RENDER THE PDF DISPLAY----------*/
     //Load PDf as an ArrayBuffer. Save RAM by not using embed, show 1st pg instead of all, using PDF.js lib.
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -209,6 +211,8 @@ pdfInput.addEventListener("change", async () => {
     pdf.cleanup();
     pdf.destroy();
   }
+
+  //display feedback messages under the upload pdfs button
   if(problem){
       pdfMessage.innerHTML = `
         <p>${(uploadedSizeSum/1024/1024).toFixed(2)} / 5MB <br>
@@ -223,7 +227,7 @@ pdfInput.addEventListener("change", async () => {
     }
   pdfInput.value=""; //so you can reupload the same file
 
-  const data = await analyzePDFs(uploadedPDFs);
+  const data = await uploadPDFs(uploadedPDFs);
   maxQuestions = data.maxQuestions;
   if(maxQuestions>30){maxQuestions=30}
   setSliderValue(Math.min(currentQuestions, maxQuestions));
@@ -231,6 +235,7 @@ pdfInput.addEventListener("change", async () => {
   quizReady();
 });
 
+/*---------------------GENERATE THE QUIZ---------------------*/
 generateButton.addEventListener("click", async () => {
   //reset prev gen quiz
   score = 0;
@@ -239,6 +244,9 @@ generateButton.addEventListener("click", async () => {
   answerArray = [];
   scoreArray = [];
   currentQuestionIndex = 0;
+  displayStats();
+  questionsContainer.innerHTML = '';
+  answersContainer.innerHTML= '';
 
   //gen button only works if user selected all settings
   if(quizReady()){
@@ -246,13 +254,14 @@ generateButton.addEventListener("click", async () => {
     let loadMessage = document.createElement("div");
     loadMessage.classList.add("load-message");
     loadingMessage(loadMessage);
-    await uploadPDFsToServer(uploadedPDFs);
+    await generateQuiz(uploadedPDFs);
     await loadQuiz();
     isLoading = false;
     loadingMessage(loadMessage);
   }
 });
 
+//loading message while quiz is generating
 function loadingMessage(loadMessage){
   if(isLoading){
     let messages = ["Generating quiz...","Hang on there...","Loading...","Thinking..."];
@@ -267,6 +276,7 @@ function loadingMessage(loadMessage){
   }
 }
 
+//ensure the user doesn't try generating a quiz without having completed prereqs
 function quizReady(){
   if(uploadedPDFs.length>0 && numberClicked && difficultyClicked){
     generateButton.classList.add("generate-button");
@@ -280,26 +290,27 @@ function quizReady(){
   }
 }
 
-async function analyzePDFs(files) {
+//sends a POST message to server.js to parse and chunk PDFs
+async function uploadPDFs(files) {
   const formData = new FormData();
   Array.from(files).forEach(file => {
     formData.append("pdfs", file);
   });
 
-  const res = await fetch("/analyze-pdfs", {
+  const res = await fetch("/upload-pdfs", {
     method: "POST",
     body: formData
   });
 
   if (!res.ok) {
-    throw new Error("Failed to analyze PDFs");
+    throw new Error("Failed to parse/chunk PDFs");
   }
 
   return await res.json();
 }
 
-
-async function uploadPDFsToServer(files) {
+//sends a POST message to server.js to use AI providers to generate quiz (a JSON file) from pdfs
+async function generateQuiz(files) {
   const formData = new FormData(); //info collected from an HTML form
 
   //appends each uploaded pdf to formData
@@ -312,7 +323,7 @@ async function uploadPDFsToServer(files) {
     > await ensures the rest of the code waits for the upload to finish first
     > fetch() makes HTTP request, /upload-pdfs is the server's URL endpoint and
       matches backend route, so HTTP request goes to server.js*/
-  const response = await fetch("/upload-pdfs", { 
+  const response = await fetch("/generate-quiz", { 
     method: "POST", //sending data request = POST, receiving data request = GET
     body: formData 
   });
@@ -323,11 +334,9 @@ async function uploadPDFsToServer(files) {
 
   maxQuestions = data.maxQuestions;
 
-  // clamp slider value
   setSliderValue(Math.min(currentQuestions, maxQuestions));
-
   numberClicked = true;
-  quizReady();
+  quizReady(); //pre-selects a num of questions upon uploading one pdf, so another prereq of generating the quiz is done
 
   return data;
 }

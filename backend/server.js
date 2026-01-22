@@ -46,7 +46,7 @@ app.use(express.static(
 app.use(express.json());
 const QUESTIONS_FILE = path.join(__dirname, "questions.json");
 
-//-------------PARSE AND CHUNK PDFS-------------//
+/*---------------------PARSE,CLEAN,CHUNK PDFS---------------------*/
 //chunk the parsed text from the pdfs
 function chunkText(text, maxWords) {
   //split text on every space/tab/nl, turning large string of parsed text into large array of individual words
@@ -73,8 +73,7 @@ function cleanText(text) {
     .replace(/\s+/g, " ");     // normalize whitespace
 }
 
-//randomize the order of the answer choices (so correct answer isn't always A, since it's always the first one generated)
-//randomize using Fisher-Yates shuffle
+//randomize the order of the answer choices (so correct answer isn't always A, since it's always the first one generated) using Fisher-Yates shuffle
 function shuffleChoices(array){
   const choices = [...array];
   for(let i=choices.length-1;i>0;i--){
@@ -90,7 +89,6 @@ function randomizeQuestion(questionObj){
   if (!shuffledChoices.includes(questionObj.correct_answer)) {
       throw new Error("Correct answer lost during shuffle");
   }
-
   return{ //rewrite the JSON object's information so that the choices are shuffled
     ...questionObj,
     choices:shuffledChoices,
@@ -98,36 +96,33 @@ function randomizeQuestion(questionObj){
   };
 }
 
-// ---------- ANALYZE PDFs (NO AI, CHEAP) ----------
-app.post("/analyze-pdfs", upload.array("pdfs"), async (req, res) => {
+//receives message from quiz.js to parse and chunk pdfs
+//app.post() listends for POST requests at /upload-pdfs,
+app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
   try {
     let totalChunks = 0;
-
     for (const file of req.files) {
       if (file.mimetype !== "application/pdf") continue;
-
       const parsed = await pdfParse(file.buffer);
       if (!parsed.text || parsed.text.trim().length < 50) continue;
-
       const words = parsed.text.split(/\s+/).length;
       const wordCap = 350;
       totalChunks += Math.ceil(words / wordCap);
     }
-
     res.json({
       success: true,
       maxQuestions: Math.max(1, totalChunks)
     });
   } catch (err) {
-    console.error("ANALYZE ERROR:", err);
-    res.status(500).json({ error: "Failed to analyze PDFs" });
+    console.error("PARSE/CHUNK ERROR:", err);
+    res.status(500).json({ error: "Failed to parse/chunk PDFs" });
   }
 });
 
 
-/*parse pdfs for text: app.post() listends for POST requests at /upload-pdfs,
-  upload.array() looks for files with field name "pdfs" and sends the pdfs to req.files*/
-app.post("/upload-pdfs", upload.array("pdfs"), async (req, res) => {
+
+//upload.array() looks for files with field name "pdfs" and sends the pdfs to req.files
+app.post("/generate-quiz", upload.array("pdfs"), async (req, res) => {
   try {
     console.log("FILES RECEIVED:", req.files.length);
     //taking in the global variables from frontend to backend
