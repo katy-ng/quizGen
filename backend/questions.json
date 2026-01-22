@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "generatedQuestions": [
     {
       "question": "Which statement best explains \"cells\" as described in these notes?",
@@ -156,3 +157,7 @@
     }
   ]
 }
+=======
+  "generatedQuestions": []
+}
+>>>>>>> 1b6b9decabdb4fa8d5ce2265e8dff53609b2a86d
